@@ -2,8 +2,9 @@
   "name": "platanus-hack-26-mx-team-25_v2",
   "version": "1.0.0",
   "description": "**Current project logo:** project-logo.png",
-  "main": "index.js",
+  "main": "tutor-ia/src/main/index.js",
   "scripts": {
+    "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
