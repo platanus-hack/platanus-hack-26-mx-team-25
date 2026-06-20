@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html class="scroll-smooth" lang="es"><head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZenZen | Estudia en paz</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;700;800&family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+    <link href="styles.css" rel="stylesheet"/>
+    <script src="landingScript.js"></script>
+</head>
+<body class="font-body-main selection:bg-surface-container-highest">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface/80 backdrop-blur-md">
+    <nav class="flex justify-between items-center max-w-[1000px] mx-auto px-container-padding py-unit h-16">
+        <div class="font-display text-display text-primary font-extrabold tracking-tighter text-[24px]">ZenZen</div>
+        <div class="hidden md:flex items-center gap-gutter">
+            <a class="text-primary font-bold border-b-2 border-primary pb-1 font-body-sm text-body-sm" href="#">¿Cómo Funciona?</a>
+        </div>
+        <button class="bg-primary-container text-on-tertiary px-6 py-2 rounded-full font-label-mono text-label-mono hover:bg-primary transition-all active:scale-95">
+            Download
+        </button>
+    </nav>
+</header>
+<main class="max-w-[1000px] mx-auto px-container-padding">
+    <!-- Hero Section -->
+    <section class="flex flex-col items-center text-center pt-section-gap pb-section-gap">
+        <div class="w-48 h-48 mb-unit">
+            <img alt="ZenZen waving frog" class="w-full h-full object-contain frog-hover" src="/animaciones/happy/1.png"/>
+        </div>
+        <h1 class="font-display text-display md:text-[64px] text-primary mb-6 max-w-2xl mx-auto leading-[1.1]">
+            Estudia acompañado. No solo, no con tabs infinitos.
+        </h1>
+        <p class="font-body-main text-secondary max-w-xl mx-auto mb-10 opacity-70">
+            Un agente de estudio que te acompaña paso a paso. Sin ruido, solo tú y ZenZen.
+        </p>
+        <button class="bg-[#EBEBEB] hover:bg-[#CFCFCF] text-[#333333] px-10 py-4 rounded-full font-label-mono text-label-mono transition-all transform hover:scale-102 active:scale-95">
+            Descargar para Desktop
+        </button>
+    </section>
+    <!-- Comparison Section -->
+    <section class="mt-section-gap grid grid-cols-1 md:grid-cols-2 gap-gutter items-stretch">
+        <!-- Left: Chaos -->
+        <div class="bg-surface-container-low p-10 rounded-xl flex flex-col items-center justify-center text-center border-2 border-transparent">
+            <div class="font-label-mono text-label-mono text-on-secondary-container uppercase mb-8 opacity-50">El caos de siempre</div>
+            <div class="relative w-full aspect-square bg-surface-container-highest/30 rounded-lg overflow-hidden p-6 opacity-40">
+                <div class="grid grid-cols-4 gap-2 h-full">
+                    <div class="bg-primary/10 h-12 rounded"></div><div class="bg-primary/10 h-12 rounded"></div><div class="bg-primary/10 h-12 rounded"></div><div class="bg-primary/10 h-12 rounded"></div>
+                    <div class="col-span-3 bg-primary/10 h-full rounded"></div>
+                    <div class="bg-primary/10 h-full rounded"></div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[48px] text-primary/20">notifications_active</span>
+                </div>
+            </div>
+            <p class="mt-8 font-body-sm text-on-secondary-container italic">Notificaciones, mil pestañas, soledad.</p>
+        </div>
+        <!-- Right: ZenZen Calma -->
+        <div class="bg-surface-container-lowest p-10 rounded-xl flex flex-col items-center justify-center text-center border-2 border-primary/5">
+            <div class="font-label-mono text-label-mono text-primary uppercase mb-8">La calma ZenZen</div>
+            <div class="relative w-full aspect-square flex items-center justify-center">
+                <img alt="ZenZen Calm" class="w-32 h-32 frog-hover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg3BidrAYi0LYHTVn4XzYQgmZjEryEpVTivIfuZqfCJXO8hkcMCfnLwBY4PdyK-X6F6IIvBkvO7ir8wZuw56MZAt8J-P-OBtKa5mMO4zYu3BgbyEL6B3Sssg9RKfBI9zVFu8U4WggDsZ23MYVAB3Zh-vedhUxM9u5wZbckC8FEk3Hb9H-k4bJM5BTr17eAbt3jG_GQRliv6aSN0xh2NaTFT4U7lVx2ATeSXcF3ebzOgRvWaEAfvhCD18qLOsA-6qiRDo9GkD8Tk-k"/>
+            </div>
+            <p class="mt-8 font-body-sm text-primary font-bold">Un lienzo vacío y tu compañero.</p>
+        </div>
+    </section>
+    <!-- Meet ZenZen Section -->
+    <section class="mt-section-gap py-section-gap">
+        <div class="text-center mb-16">
+            <span class="font-label-mono text-label-mono bg-surface-container-high px-3 py-1 rounded-full text-secondary mb-4 inline-block">Conoce a tu amigo</span>
+            <h2 class="font-headline-lg text-headline-lg text-primary max-w-md mx-auto">
+                ZenZen no es un ícono. Es quien te acompaña mientras aprendes.
+            </h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+            <div class="flex flex-col items-center group">
+                <div class="w-full aspect-square p-8 bg-surface-container-low rounded-2xl mb-6 transition-colors group-hover:bg-surface-container-highest">
+                    <img alt="Frog thinking" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida/AP1WRLueRhNjXEOUadMSVCxJQtAzcMmNpJs9hddLUtoLN3vNI7TGhegsFe4AAGo0t0amldxEgyF8lIFj7SaTmvd84IuRQqd-IJId6a7_uN52Gt0RDqA3EthMAKe8YbD0orokZ1bgm1MdlLYlmGfDaMv95Paom6ALieheim7lx5Jg-qbksNoTfFzqmvkvLRM7yhHQhUCrxTJFNDsAtMWNOGmQTwVR3Cs7Td_fWq71UnFh5nO15CLNl8PTLOD1m6k"/>
+                </div>
+                <span class="font-label-mono text-label-mono opacity-50">Reflexiona contigo</span>
+            </div>
+            <div class="flex flex-col items-center group">
+                <div class="w-full aspect-square p-8 bg-surface-container-low rounded-2xl mb-6 transition-colors group-hover:bg-surface-container-highest">
+                    <img alt="Frog focused" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAEsfhwatZQiEVnIjzZg051u08jsRSA2ypduwjS0vvALx1w1OQm7ZlaMDxKtsPYGzDsf-Ppj6XHPUTtXAJ_05argE6TsO1woRYqC-lCge1bin9kVWoGxggU6EFdwK4GHkVyVbwBaFal7ahWKLz78t8H3WhyPg4iBHSJAgpBC2KmwX3FcX6ZII93PXHmSShQ22b6YqUnFAQVm_NDnfMTrbD6CZz2FLS4bxFo1Yt7XjzvYaxhVh3IXs0mSWG8ZEGGxpBOEYPPaL-hUE"/>
+                </div>
+                <span class="font-label-mono text-label-mono opacity-50">Concentrado en el objetivo</span>
+            </div>
+            <div class="flex flex-col items-center group">
+                <div class="w-full aspect-square p-8 bg-surface-container-low rounded-2xl mb-6 transition-colors group-hover:bg-surface-container-highest">
+                    <img alt="Frog celebrating" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-CSGowzpwwAHRtCKU5rGNtJD-_3TYO-HF9CBIzYWAHNo4JHUXXG4FjVrILO-tDuV1WzAGMJAh7XMwaKGfMl3h1MMSRRVFzt2xjfXgztuvWenUnwOxAu7OnaEw0n3hr6tbafMx0VqxOt_9oN2S1k33KsM6i9b3WX79JkXUtoK35wCxqhsdCYc390BYnGuqebtOD0cNUEpnAf-4gEcWfal_-_Pf7JahdqDi3Pd4c77FPt7M_Qfh1LvlLkmEq3uq7VSHipgV0QBqM5A"/>
+                </div>
+                <span class="font-label-mono text-label-mono opacity-50">Celebra tus logros</span>
+            </div>
+        </div>
+    </section>
+    <!-- How it Works -->
+    <section class="mt-section-gap bg-surface-container-low rounded-[40px] px-10 py-20">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-16">
+            <div class="flex flex-col gap-4">
+                <div class="w-12 h-12 flex items-center justify-center bg-surface-container-highest rounded-full mb-2">
+                    <img alt="Small ZenZen" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg3BidrAYi0LYHTVn4XzYQgmZjEryEpVTivIfuZqfCJXO8hkcMCfnLwBY4PdyK-X6F6IIvBkvO7ir8wZuw56MZAt8J-P-OBtKa5mMO4zYu3BgbyEL6B3Sssg9RKfBI9zVFu8U4WggDsZ23MYVAB3Zh-vedhUxM9u5wZbckC8FEk3Hb9H-k4bJM5BTr17eAbt3jG_GQRliv6aSN0xh2NaTFT4U7lVx2ATeSXcF3ebzOgRvWaEAfvhCD18qLOsA-6qiRDo9GkD8Tk-k"/>
+                </div>
+                <div class="font-label-mono text-label-mono text-primary">01. Descarga ZenZen</div>
+                <p class="font-body-sm text-secondary">Obtén la aplicación para tu sistema operativo y dale un hogar a tu nuevo compañero.</p>
+            </div>
+            <div class="flex flex-col gap-4">
+                <div class="w-12 h-12 flex items-center justify-center bg-surface-container-highest rounded-full mb-2">
+                    <span class="material-symbols-outlined text-primary">open_in_new</span>
+                </div>
+                <div class="font-label-mono text-label-mono text-primary">02. Abre tu lienzo</div>
+                <p class="font-body-sm text-secondary">Un espacio libre de distracciones diseñado para que tu mente fluya sin interrupciones.</p>
+            </div>
+            <div class="flex flex-col gap-4">
+                <div class="w-12 h-12 flex items-center justify-center bg-surface-container-highest rounded-full mb-2">
+                    <span class="material-symbols-outlined text-primary">psychology</span>
+                </div>
+                <div class="font-label-mono text-label-mono text-primary">03. Aprende campo por campo</div>
+                <p class="font-body-sm text-secondary">ZenZen te guía fragmento a fragmento, asegurando que entiendas cada concepto.</p>
+            </div>
+        </div>
+    </section>
+    <!-- Final CTA -->
+    <section class="mt-section-gap pb-section-gap text-center flex flex-col items-center">
+        <div class="w-64 h-64 mb-6">
+            <img alt="ZenZen inviting" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIGqrGl0bSt8AjLxSBBqIr8GMJ0DGnwn_KSJzdtrwIV6JfsobVlt7giH_b3J7Pi--M-ui7XwrZr81lP6roMLeT1DFGcfbGDONFjzMB49PeyRVViY2etUZo4v9YXYMH4NpKhX_4Y2pR2_nw1eCqB9ZmBLEkIglWzCGbgqDwF_2YaZqYaip1CUE9e8_6lSjZTiZUlPDHJAbpvSpwP826Rck4n-EGq5i6Jg4R2mJT4ScqTqveUeYGI5i41IuT9yZrZ-R6i4vebGbT3Nw"/>
+        </div>
+        <h2 class="font-display text-display text-primary mb-10">¿Listo para estudiar en paz?</h2>
+        <button class="bg-primary text-on-primary px-12 py-5 rounded-full font-label-mono text-label-mono hover:opacity-90 transition-all active:scale-95">
+            Empieza a estudiar con ZenZen
+        </button>
+    </section>
+</main>
+<!-- Footer -->
+<footer class="w-full mt-section-gap bg-surface">
+    <div class="flex flex-col items-center gap-gutter max-w-[1000px] mx-auto px-container-padding pb-section-gap">
+        <div class="font-display text-display text-primary text-[20px] font-bold">ZenZen</div>
+        <div class="flex gap-gutter text-on-secondary-container opacity-50 font-label-mono text-label-mono">
+            <a class="hover:text-primary transition-opacity" href="#">Privacy</a>
+            <a class="hover:text-primary transition-opacity" href="#">Terms</a>
+            <a class="hover:text-primary transition-opacity" href="#">Support</a>
+        </div>
+        <p class="font-label-mono text-label-mono text-secondary opacity-30 mt-4 text-center">
+            © 2024 ZenZen AI. Study in peace.
+        </p>
+    </div>
+</footer>
+</body></html>
