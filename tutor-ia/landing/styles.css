@@ -1,0 +1,33 @@
+body {
+    background-color: #fdf8f8;
+    background-image: radial-gradient(#ebe7e7 1px, transparent 1px);
+    background-size: 24px 24px;
+    color: #1e1e1e;
+    -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+}
+
+.frog-shadow {
+    filter: drop-shadow(0 4px 0px rgba(0,0,0,0.05));
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.frog-hover:hover {
+    transform: scale(1.05) rotate(2deg);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Contenedor de una animacion por sprite sheet.
+   El JS (SpriteAnimator) se encarga de poner la imagen de fondo
+   y de ir moviendola cuadro a cuadro. */
+.sprite-animate {
+    display: inline-block;
+    background-repeat: no-repeat;
+    background-position: 0% 0%;
+}

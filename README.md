@@ -46,3 +46,24 @@ code to a personal repo:
 Your commits stay mirrored here for judging, while the deploy runs from the repo you control.
 
 Have fun! 🚀
+
+
+# Tutor IA — ZenZen
+Tutor multimodal sin contacto: voz, mano y atención.
+
+## Stack
+| Capa | Tecnología |
+|---|---|
+| Shell | Electron |
+| Voz | Porcupine + Web Speech / ElevenLabs |
+| Agente | Claude API (streaming + tool-use) |
+| Mano | MediaPipe Hands |
+| Investigación | Firecrawl |
+
+## Cómo correrlo
+1. `npm install`
+2. `cp .env.example .env` y agrega tus keys
+3. `npm start`
+
+## Decisiones de arquitectura
+Ver `docs/architecture.md`
