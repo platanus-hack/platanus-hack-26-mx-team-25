@@ -1,0 +1,25 @@
+{
+  "name": "platanus-hack-26-mx-team-25_v2",
+  "version": "1.0.0",
+  "description": "**Current project logo:** project-logo.png",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/platanus-hack/platanus-hack-26-mx-team-25.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/platanus-hack/platanus-hack-26-mx-team-25/issues"
+  },
+  "homepage": "https://github.com/platanus-hack/platanus-hack-26-mx-team-25#readme",
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.15.3"
+  }
+}
