@@ -1,5 +1,7 @@
 node_modules/
 dist/
+tutor-ia/out/
+tutor-ia/release/
 tutor-ia/.env
 *.env
 package-lock.json
