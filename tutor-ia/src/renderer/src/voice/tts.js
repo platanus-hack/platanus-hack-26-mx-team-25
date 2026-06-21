@@ -1,44 +1,76 @@
 // src/renderer/voice/tts.js
 export class TextToSpeech {
     constructor() {
-        this.synth = window.speechSynthesis;
+        this.apiKey = null; 
+        this.voiceId = "jw1XYij1FCiI9FENSxIf"; // El ID no es sensible, puede ir directo
+        this.currentAudio = null; 
     }
 
     async init() {
-        // No necesitamos inicializar claves aquí, pero mantenemos la función para no romper app.js
-        console.log("Motor TTS Nativo inicializado (Sin costo)");
+        // Pedimos la API Key a través del bridge de Electron
+        this.apiKey = await window.electronAPI.getElevenLabsKey();
+        
+        if (!this.apiKey) {
+            console.warn("Advertencia: No se recibió la API Key de ElevenLabs desde el main process.");
+        }
+        console.log(`Motor TTS ElevenLabs inicializado. Voice ID: ${this.voiceId}`);
     }
 
     async speak(text) {
-        return new Promise((resolve, reject) => {
-            if (this.synth.speaking) {
-                console.error('El tutor ya está hablando.');
+        return new Promise(async (resolve, reject) => {
+            if (this.currentAudio && !this.currentAudio.paused && !this.currentAudio.ended) {
                 reject('TTS ocupado');
                 return;
             }
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            
-            // Buscar una voz en español si está disponible
-            const voices = this.synth.getVoices();
-            const spanishVoice = voices.find(voice => voice.lang.includes('es'));
-            if (spanishVoice) {
-                utterance.voice = spanishVoice;
-            }
+            try {
+                // Agregamos /stream y el parámetro optimize_streaming_latency=3
+                const apiUrl = `https://api.elevenlabs.io/v1/text-to-speech/${this.voiceId}/stream?optimize_streaming_latency=3`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'audio/mpeg',
+                        'xi-api-key': this.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        model_id: "eleven_multilingual_v2", 
+                        voice_settings: {
+                            stability: 0.5,
+                            similarity_boost: 0.75,
+                            use_speaker_boost: true
+                        }
+                    })
+                });
 
-            utterance.rate = 1.0; // Velocidad normal
-            utterance.pitch = 1.0; 
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Error de ElevenLabs: ${errorData.detail?.message || response.statusText}`);
+                }
 
-            utterance.onend = () => {
-                resolve(); // Resolvemos la promesa cuando termina de hablar
-            };
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                this.currentAudio = new Audio(audioUrl);
 
-            utterance.onerror = (error) => {
-                console.error("Error en TTS Nativo:", error);
+                this.currentAudio.onended = () => {
+                    URL.revokeObjectURL(audioUrl); 
+                    resolve(); 
+                };
+
+                this.currentAudio.onerror = (error) => {
+                    URL.revokeObjectURL(audioUrl);
+                    reject(error);
+                };
+
+                await this.currentAudio.play();
+
+            } catch (error) {
+                console.error("Error en TTS ElevenLabs:", error);
                 reject(error);
-            };
-
-            this.synth.speak(utterance);
+            }
         });
     }
 }

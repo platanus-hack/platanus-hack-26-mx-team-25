@@ -17,6 +17,8 @@
 body {
     margin: 0;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     background-color: #fdf8f8;
     background-image: radial-gradient(#ebe7e7 1px, transparent 1px);
     background-size: 24px 24px;
@@ -76,32 +78,75 @@ body {
 
 /* ---------- BOARD ---------- */
 .board-wrapper {
+    flex: 1 1 auto;
     display: flex;
     justify-content: center;
+    align-items: stretch;
+    min-height: 0;
     padding: 24px;
 }
 
 #pizarra-container {
-    position: relative; /* ancla para que el avatar flote dentro de este contenedor */
+    position: relative; /* Ancla maestra para las capas absolutas y el avatar */
     width: 100%;
     max-width: 1450px;
+    height: 100%;
+    min-height: 620px;
     background: var(--bg-board);
-    border: 1px solid #fdf8f8;;
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
-    padding: 16px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    overflow: hidden; /* Evita que los diagramas se salgan de los bordes redondeados */
 }
 
-canvas {
-    display: block;
+/* ---------- CAPAS DE LAS PIZARRAS ---------- */
+/* Todas las pizarras comparten esta clase para superponerse perfectamente */
+.board-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: auto;
-    background-color: #fdf8f8;
-    background-image: radial-gradient(#ebe7e7 1px, transparent 1px);
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* 🎨 Modo 1: Canvas 2D */
+canvas.board-layer {
+    background-color: transparent;
+    background-image: radial-gradient(var(--bg-dot) 1px, transparent 1px);
     background-size: 24px 24px;
-    color: #1e1e1e;
-    border: 1px solid #fdf8f8;
-    border-radius: 8px;
+    z-index: 1;
+}
+
+/* 📊 Modo 2: Mermaid */
+.mermaid-layer {
+    background-color: transparent;
+    /* Centrado flex para asegurar el render inicial */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+/* Forzamos a que el lienzo de la cámara llene el contenedor absoluto */
+.mermaid-layer svg {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* 🚀 Modo 3: Código */
+.code-layer {
+    background: #1e1e1e;
+    overflow: auto;
+    z-index: 3;
+}
+
+.code-layer pre {
+    margin: 0;
+    padding: 24px;
+    font-size: 1.1rem;
+    min-height: 100%;
 }
 
 /* ---------- AVATAR FLOTANTE ---------- */
@@ -109,10 +154,10 @@ canvas {
     position: absolute;
     width: 110px;
     height: auto;
-    pointer-events: none; /* no bloquea clicks sobre la pizarra */
+    pointer-events: none;
     filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
     transition: top 1.4s ease-in-out, left 1.4s ease-in-out;
     top: 20px;
     left: 20px;
-    z-index: 5;
+    z-index: 10;
 }
