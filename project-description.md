@@ -1,10 +1,17 @@
-# Tutor IA — Plataforma de Aprendizaje Socrático Interactivo
+# ZenZen — Plataforma Multimodal de Aprendizaje Socrático
 
 ## Visión General
-Tutor IA es una aplicación de escritorio diseñada en Electron y potenciada por modelos de lenguaje avanzados, cuyo objetivo es democratizar la educación personalizada. Inspirado en el método socrático, el agente no entrega respuestas directas ni masivas; en su lugar, guía al usuario a través de micro-conceptos, preguntas reflexivas y soporte visual dinámico.
 
-## Características Principales
-* **Cerebro Socrático Avanzado:** Implementación basada en metodologías de optimización de densidad pedagógica. Respuestas concisas que priorizan el razonamiento del alumno.
-* **Pizarra Interactiva Autónoma:** El agente genera instrucciones directas para renderizar figuras geométricas, vectores y texto en un Canvas 2D en tiempo real mientras explica.
-* **Contexto Eficiente y Económico:** Sistema de persistencia local en Markdown que almacena las notas de valor de sesiones pasadas. El agente recupera el historial de temas completados sin sobrecargar el contexto de tokens de entrada, garantizando un rendimiento óptimo y un consumo de presupuesto plano.
-* **Arquitectura S.O.L.I.D.:** Código de backend modularizado e inyectado por dependencias, preparado para un escalado e integración rápida de nuevos componentes.
+ZenZen no es un chatbot tradicional: es un **agente pedagógico autónomo** encapsulado en una aplicación de escritorio nativa (Electron + Vue). Su núcleo cognitivo aplica estrictamente el **método socrático**: nunca entrega respuestas directas. En su lugar, descompone conceptos complejos en micro-lecciones, guía con preguntas reflexivas y se apoya en herramientas visuales generadas en tiempo real.
+
+## Arquitectura y Características Técnicas
+
+- **Motor gráfico reactivo (Vue + Mermaid.js):** el agente programa sus propias interfaces — genera instrucciones en tiempo real para compilar diagramas vectoriales interactivos, dibujar sobre un canvas 2D o inyectar bloques de código con resaltado sintáctico, con un sistema de cámara inteligente (auto-focus).
+
+- **Interacción walkie-talkie (voz a voz):** transcripción de ultra-baja latencia (Whisper vía Groq) y síntesis de voz (TTS) del sistema operativo. El usuario habla presionando una tecla o mediante wake words, y el TTS se interrumpe al instante para mantener una conversación fluida.
+
+- **Escudo anti-alucinaciones (sanitización por regex):** una capa de middleware en el frontend intercepta, sanitiza y reconstruye estructuras JSON corruptas provenientes del LLM, evitando que la interfaz colapse durante la generación de contenido complejo.
+
+- **Memoria semántica local (RAG-lite):** persistencia local-first basada en Markdown. El agente gestiona autónomamente una "libreta de post-its" en el disco del usuario, recuperando contexto de sesiones pasadas sin saturar el límite de tokens ni comprometer la privacidad.
+
+- **Diseño orientado a servicios (SOLID):** backend en Node.js desacoplado mediante inyección de dependencias (`StorageService`, `AgentService`, `WindowManager`), listo para escalar con nuevas tools / function calling.
