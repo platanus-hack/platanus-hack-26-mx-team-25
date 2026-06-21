@@ -1,26 +1,38 @@
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onUnmounted, nextTick } from 'vue'
 import { SpeechToText } from '../voice/stt.js'
 import { TextToSpeech } from '../voice/tts.js'
 import { HandTracker } from '../vision/HandTracker.js' 
 import mermaid from 'mermaid'
-import { SpeechToText } from '../voice/stt.js'
 import svgPanZoom from 'svg-pan-zoom'
 
 /**
  * @param {Object} deps
  * @param {import('vue').Ref<HTMLCanvasElement|null>} deps.canvasRef
+ * @param {import('vue').Ref<HTMLCanvasElement|null>} deps.debugCanvasRef
  * @param {import('vue').Ref<HTMLElement|null>} deps.mermaidContainerRef
  * @param {import('vue').Ref<HTMLElement|null>} deps.codeBlockRef
+ * @param {import('vue').Ref<string>} deps.activeMode
+ * @param {import('vue').Ref<string>} deps.codeLanguage
+ * @param {import('vue').Ref<string>} deps.codeContent
+ * @param {import('vue').Ref<string>} deps.mermaidContent
  * @param {(estado: string) => void} deps.setAvatarEstado
  */
-export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) {
+export function useTutorSession({ 
+    canvasRef, 
+    debugCanvasRef, 
+    mermaidContainerRef, 
+    codeBlockRef,
+    activeMode,
+    codeLanguage,
+    codeContent,
+    mermaidContent,
+    setAvatarEstado 
+}) {
     const status = ref('Iniciando sistema...')
     const micActive = ref(false)
     const micEmoji = ref('🎤')
     const modoRatonActivo = ref(false) 
-    const activeMode = ref('canvas')
-    const codeLanguage = ref('txt')
-    const codeContent = ref('')
+    
     const grabadora = new SpeechToText()
     const tts = new TextToSpeech() 
     let handTracker = null; 
@@ -31,7 +43,7 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
     let animFrameId = null
     let ctx = null
     let mermaidInitialized = false
-    let panZoomInstance = null // 🚨 NUEVO: Rastreador de la cámara
+    let panZoomInstance = null 
 
     function getCtx() {
         if (!ctx && canvasRef.value) {
@@ -41,7 +53,8 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
     }
 
     function ocultarPanelesVisuales() {
-        const mermaidContainer = mermaidContainerRef.value || document.getElementById('mermaidContainer')
+        // Buscamos de forma segura por la referencia reactiva o por ID como fallback
+        const mermaidContainer = mermaidContainerRef?.value || document.getElementById('mermaidContainer')
         const codeContainer = document.getElementById('codeContainer')
 
         if (mermaidContainer) mermaidContainer.style.display = 'none'
@@ -58,15 +71,14 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
         if (!mermaidInitialized) {
             mermaid.initialize({
                 startOnLoad: false,
-                // 🚨 FORZAMOS UN TEMA PERSONALIZADO ELEGANTE
                 theme: 'base',
                 themeVariables: {
-                    primaryColor: '#334155',        /* Fondo de nodos: Pizarra oscuro */
-                    primaryTextColor: '#f8fafc',    /* Texto: Blanco hueso */
-                    primaryBorderColor: '#1e293b',  /* Borde: Pizarra muy oscuro */
-                    lineColor: '#94a3b8',           /* Líneas y flechas: Gris claro */
-                    secondaryColor: '#3730a3',      /* Acentos secundarios: Índigo mutado */
-                    tertiaryColor: '#0f172a'        /* Fondos terciarios */
+                    primaryColor: '#334155',        
+                    primaryTextColor: '#f8fafc',    
+                    primaryBorderColor: '#1e293b',  
+                    lineColor: '#94a3b8',           
+                    secondaryColor: '#3730a3',      
+                    tertiaryColor: '#0f172a'        
                 },
                 securityLevel: 'loose'
             })
@@ -77,7 +89,7 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
     async function renderMermaid(codigo) {
         await asegurarMermaid()
 
-        const container = mermaidContainerRef.value || document.getElementById('mermaidContainer')
+        const container = mermaidContainerRef?.value || document.getElementById('mermaidContainer')
         if (!container) return
 
         const codigoLimpio = codigo
@@ -92,7 +104,6 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
         await nextTick()
         container.style.display = 'block'
         
-        // 🚨 Destruimos cámara vieja
         if (panZoomInstance) {
             panZoomInstance.destroy()
             panZoomInstance = null
@@ -109,18 +120,16 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
 
             const svgElement = document.querySelector(`#${uniqueId} svg`)
             if (svgElement) {
-                // Limpiamos estilos de Mermaid para que la cámara tome el control
                 svgElement.removeAttribute('style')
                 svgElement.setAttribute('width', '100%')
                 svgElement.setAttribute('height', '100%')
 
-                // 🚨 USAMOS LA VERSIÓN IMPORTADA (Sin el window.)
                 panZoomInstance = svgPanZoom(svgElement, {
                     zoomEnabled: true,
-                    controlIconsEnabled: false, // 🚨 1. APAGAMOS LOS BOTONES ESTORBOSOS
+                    controlIconsEnabled: false, 
                     fit: false,
                     center: true, 
-                    minZoom: 0.3, // Permitimos alejar un poco más
+                    minZoom: 0.3, 
                     maxZoom: 10,
                 })
                 
@@ -128,7 +137,6 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
                 panZoomInstance.center()
                 panZoomInstance.zoom(0.85)
 
-                // Cámara Inteligente (Auto-Focus)
                 setTimeout(() => {
                     const nodoActivo = svgElement.querySelector('.highlight')
                     if (nodoActivo && panZoomInstance) {
@@ -170,11 +178,11 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
         codeBlockRef.value.textContent = codigo
         codeContainer.style.display = 'block'
         if (canvasRef.value) canvasRef.value.style.display = 'none'
-        if (mermaidContainerRef.value) mermaidContainerRef.value.style.display = 'none'
+        if (mermaidContainerRef?.value) mermaidContainerRef.value.style.display = 'none'
     }
 
     // ---------------------------------------------------------------------
-    // MOTOR GRÁFICO DEL CANVAS (Sin cambios)
+    // MOTOR GRÁFICO DEL CANVAS
     // ---------------------------------------------------------------------
     function animarDibujo(dibujo, duracionMs, onComplete) {
         const context = getCtx()
@@ -265,22 +273,6 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
         }
     }
 
-    function hablarTexto(texto) {
-        if (!texto) return
-        status.value = texto
-        window.speechSynthesis.cancel()
-        const utterance = new SpeechSynthesisUtterance(texto)
-        utterance.lang = 'es-MX'
-        utterance.rate = 1.05
-        utterance.onstart = () => setAvatarEstado('hablando')
-        utterance.onend = () => setAvatarEstado('reposo')
-        utterance.onerror = () => setAvatarEstado('reposo')
-        window.speechSynthesis.speak(utterance)
-    }
-
-    // ---------------------------------------------------------------------
-    // ORQUESTACIÓN: texto + dibujo sincronizados, paso a paso
-    // ---------------------------------------------------------------------
     async function procesarContratoInterfaz(data) {
         console.log('Contrato recibido:', data)
 
@@ -288,22 +280,27 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
             setAvatarEstado(data.avatar_estado)
         }
 
-        window.speechSynthesis.cancel()
         if (animFrameId) cancelAnimationFrame(animFrameId)
 
         if (data.bloque_codigo) {
             renderCodeBlock(data.bloque_codigo)
-            if (data.texto_a_hablar) hablarTexto(data.texto_a_hablar)
+            if (data.texto_a_hablar) {
+                status.value = data.texto_a_hablar
+                await tts.speak(data.texto_a_hablar)
+            }
             return
         }
 
         if (data.codigo_mermaid && data.codigo_mermaid.trim() !== '') {
+            mermaidContent.value = data.codigo_mermaid
             await renderMermaid(data.codigo_mermaid)
-            if (data.texto_a_hablar) hablarTexto(data.texto_a_hablar)
+            if (data.texto_a_hablar) {
+                status.value = data.texto_a_hablar
+                await tts.speak(data.texto_a_hablar)
+            }
             return
         }
 
-        // Formato nuevo: { secuencia: [{ texto, avatar_estado?, dibujo }] }
         if (data.secuencia && Array.isArray(data.secuencia)) {
             secuenciaActual = data.secuencia
             pasoActualIndex = 0
@@ -313,17 +310,16 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
         }
 
         if (data.texto_a_hablar || data.pasos_dibujo) {
-            console.warn('⚠️ El agente sigue enviando el formato viejo (texto_a_hablar/pasos_dibujo).')
+            console.warn('⚠️ El agente sigue enviando el formato viejo.')
             if (data.texto_a_hablar) {
-                // 🚨 ESCUDO ANTI-FUGAS DE JSON
-                // Si Claude escupe comillas y propiedades dentro del texto, lo cortamos ahí mismo.
                 let textoLimpio = data.texto_a_hablar
-                    .split('","')[0]     // Corta si alucina la siguiente propiedad
-                    .split('", "')[0]    // Corta si alucina con espacios
-                    .split('codigo_mermaid')[0] // Corta si menciona la variable
-                    .replace(/["{}\\]/g, '');   // Elimina llaves y barras perdidas
+                    .split('","')[0]
+                    .split('", "')[0]
+                    .split('codigo_mermaid')[0]
+                    .replace(/["{}\\]/g, '');
 
-                hablarTexto(textoLimpio);
+                status.value = textoLimpio
+                await tts.speak(textoLimpio);
             }
 
             if (data.pasos_dibujo && Array.isArray(data.pasos_dibujo)) {
@@ -495,5 +491,5 @@ export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) 
         if (tts.currentAudio) tts.currentAudio.pause();
     })
 
-    return { status, micActive, micEmoji, activeMode, codeLanguage, codeContent, bootstrap }
+    return { status, micActive, micEmoji, bootstrap, modoRatonActivo }
 }
