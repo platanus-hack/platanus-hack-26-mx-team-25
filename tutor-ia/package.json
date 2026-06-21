@@ -44,6 +44,7 @@
     "dotenv": "^17.4.2",
     "mermaid": "^11.15.0",
     "svg-pan-zoom": "^3.6.2",
+    "vosk-browser": "^0.0.8",
     "vue": "^3.5.38"
   }
 }

@@ -1,9 +1,10 @@
 "use strict";
-const { app, BrowserWindow, session, ipcMain } = require("electron");
+const { app, BrowserWindow, Tray, Menu, session, ipcMain, globalShortcut } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const Anthropic = require("@anthropic-ai/sdk");
 require("dotenv").config();
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 const CONFIG = {
   MODELS: {
     DEV: "claude-haiku-4-5-20251001",
@@ -282,10 +283,19 @@ class WindowManager {
     this.win = new BrowserWindow({
       width: this.config.WINDOW.width,
       height: this.config.WINDOW.height,
+      show: false,
+      // Arranca OCULTA: vive en segundo plano escuchando el wake word.
+      skipTaskbar: true,
+      // Mientras está oculta no aparece en la barra de tareas.
       webPreferences: {
         preload: this.config.PATHS.PRELOAD_JS,
         contextIsolation: true,
-        nodeIntegration: false
+        nodeIntegration: false,
+        // El renderer necesita seguir vivo aunque la ventana esté oculta,
+        // para poder escuchar el wake word en segundo plano.
+        backgroundThrottling: false,
+        // Permite que el AudioContext de Vosk arranque sin gesto del usuario.
+        autoplayPolicy: "no-user-gesture-required"
       }
     });
     if (!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]) {
@@ -293,7 +303,29 @@ class WindowManager {
     } else {
       this.win.loadFile(this.config.PATHS.RENDER_HTML);
     }
-    this.win.webContents.openDevTools();
+    if (!app.isPackaged) {
+      this.win.webContents.openDevTools({ mode: "detach" });
+    }
+    this.win.on("close", (e) => {
+      if (!app.isQuitting) {
+        e.preventDefault();
+        this.ocultar();
+      }
+    });
+  }
+  /** Muestra y enfoca la ventana (la traemos del segundo plano). */
+  mostrar() {
+    if (!this.win) return;
+    this.win.setSkipTaskbar(false);
+    if (this.win.isMinimized()) this.win.restore();
+    this.win.show();
+    this.win.focus();
+  }
+  /** Oculta la ventana; el renderer sigue escuchando el wake word. */
+  ocultar() {
+    if (!this.win) return;
+    this.win.hide();
+    this.win.setSkipTaskbar(true);
   }
 }
 class AppOrchestrator {
@@ -343,17 +375,48 @@ class AppOrchestrator {
     ipcMain.handle("get-elevenlabs-key", () => {
       return process.env.ELEVENLABS_API_KEY;
     });
+    ipcMain.handle("mostrar-app", () => {
+      this.windowManager.mostrar();
+      return true;
+    });
   }
   start() {
+    const obtuvoLock = app.requestSingleInstanceLock();
+    if (!obtuvoLock) {
+      app.quit();
+      return;
+    }
+    app.on("second-instance", () => {
+      this.windowManager.mostrar();
+      this.windowManager.win?.webContents.send("activar-sesion");
+    });
     app.whenReady().then(() => {
+      if (app.isPackaged) {
+        app.setLoginItemSettings({
+          openAtLogin: true,
+          openAsHidden: true,
+          args: ["--hidden"]
+        });
+      }
       this.windowManager.init();
       this._registerIPCCheckpoints();
+      globalShortcut.register("CommandOrControl+Alt+Z", () => {
+        this.windowManager.mostrar();
+        this.windowManager.win?.webContents.send("activar-sesion");
+      });
+      globalShortcut.register("CommandOrControl+Alt+Q", () => {
+        app.isQuitting = true;
+        app.quit();
+      });
       console.log(
-        `[Orquestador Boot] Listo. Modelo en uso: ${CONFIG.ACTIVE_MODEL}`
+        `[Orquestador Boot] Listo (oculto, escuchando "Hola rana"). Modelo: ${CONFIG.ACTIVE_MODEL}`
       );
     });
-    app.on("window-all-closed", () => {
-      if (process.platform !== "darwin") app.quit();
+    app.on("window-all-closed", (e) => {
+      if (!app.isQuitting) e.preventDefault();
+    });
+    app.on("will-quit", () => {
+      globalShortcut.unregisterAll();
     });
   }
 }

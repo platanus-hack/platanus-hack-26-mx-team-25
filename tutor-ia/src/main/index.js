@@ -4,11 +4,15 @@
  * @architecture Orientada a Servicios
  */
 
-const { app, BrowserWindow, Tray, Menu, session, ipcMain } = require("electron");
+const { app, BrowserWindow, Tray, Menu, session, ipcMain, globalShortcut } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const Anthropic = require("@anthropic-ai/sdk");
 require("dotenv").config();
+
+// El wake word (Vosk) necesita capturar audio en una ventana oculta, sin que
+// el usuario haya hecho click. Permitimos que el AudioContext arranque solo.
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 // ============================================================================
 // [CONFIG] CAPA DE CONFIGURACIÓN
@@ -344,10 +348,17 @@ class WindowManager {
     this.win = new BrowserWindow({
       width: this.config.WINDOW.width,
       height: this.config.WINDOW.height,
+      show: false,        // Arranca OCULTA: vive en segundo plano escuchando el wake word.
+      skipTaskbar: true,  // Mientras está oculta no aparece en la barra de tareas.
       webPreferences: {
         preload: this.config.PATHS.PRELOAD_JS,
         contextIsolation: true,
         nodeIntegration: false,
+        // El renderer necesita seguir vivo aunque la ventana esté oculta,
+        // para poder escuchar el wake word en segundo plano.
+        backgroundThrottling: false,
+        // Permite que el AudioContext de Vosk arranque sin gesto del usuario.
+        autoplayPolicy: "no-user-gesture-required",
       },
     });
 
@@ -357,7 +368,37 @@ class WindowManager {
       this.win.loadFile(this.config.PATHS.RENDER_HTML);
     }
 
-    this.win.webContents.openDevTools(); // Consola abierta para debuggear rápido
+    // En desarrollo abrimos DevTools DESACOPLADO: así puedes ver los logs
+    // "[WakeWord] escuchó:" y calibrar el disparador aunque la ventana esté
+    // oculta. En la versión empaquetada no se abre.
+    if (!app.isPackaged) {
+      this.win.webContents.openDevTools({ mode: "detach" });
+    }
+
+    // Al cerrar la ventana NO matamos la app: la ocultamos para seguir
+    // escuchando "Hola rana". Se sale de verdad desde el atajo Ctrl+Alt+Q.
+    this.win.on("close", (e) => {
+      if (!app.isQuitting) {
+        e.preventDefault();
+        this.ocultar();
+      }
+    });
+  }
+
+  /** Muestra y enfoca la ventana (la traemos del segundo plano). */
+  mostrar() {
+    if (!this.win) return;
+    this.win.setSkipTaskbar(false);
+    if (this.win.isMinimized()) this.win.restore();
+    this.win.show();
+    this.win.focus();
+  }
+
+  /** Oculta la ventana; el renderer sigue escuchando el wake word. */
+  ocultar() {
+    if (!this.win) return;
+    this.win.hide();
+    this.win.setSkipTaskbar(true);
   }
 }
 
@@ -424,19 +465,67 @@ class AppOrchestrator {
     ipcMain.handle("get-elevenlabs-key", () => {
       return process.env.ELEVENLABS_API_KEY;
     });
+
+    // 5. Wake word detectado en el renderer → mostramos la interfaz.
+    ipcMain.handle("mostrar-app", () => {
+      this.windowManager.mostrar();
+      return true;
+    });
   }
 
   start() {
+    // [1] INSTANCIA ÚNICA: solo un ZenZen escuchando a la vez. Si ya hay uno
+    // corriendo en segundo plano, la nueva instancia simplemente lo muestra.
+    const obtuvoLock = app.requestSingleInstanceLock();
+    if (!obtuvoLock) {
+      app.quit();
+      return;
+    }
+    app.on("second-instance", () => {
+      this.windowManager.mostrar();
+      this.windowManager.win?.webContents.send("activar-sesion");
+    });
+
     app.whenReady().then(() => {
+      // [2] AUTOSTART OCULTO: la app (.exe) se ejecuta sola al iniciar sesión
+      // en Windows, sin necesidad de dar click. Queda escuchando el wake word.
+      // Solo en la versión empaquetada, para no ensuciar el arranque en dev.
+      if (app.isPackaged) {
+        app.setLoginItemSettings({
+          openAtLogin: true,
+          openAsHidden: true,
+          args: ["--hidden"],
+        });
+      }
+
       this.windowManager.init();
       this._registerIPCCheckpoints();
+
+      // [3] RESPALDO (cero margen de error): si la voz falla, estos atajos
+      // globales funcionan desde cualquier parte de Windows.
+      //   Ctrl+Alt+Z → abrir ZenZen     Ctrl+Alt+Q → salir por completo
+      globalShortcut.register("CommandOrControl+Alt+Z", () => {
+        this.windowManager.mostrar();
+        this.windowManager.win?.webContents.send("activar-sesion");
+      });
+      globalShortcut.register("CommandOrControl+Alt+Q", () => {
+        app.isQuitting = true;
+        app.quit();
+      });
+
       console.log(
-        `[Orquestador Boot] Listo. Modelo en uso: ${CONFIG.ACTIVE_MODEL}`,
+        `[Orquestador Boot] Listo (oculto, escuchando "Hola rana"). Modelo: ${CONFIG.ACTIVE_MODEL}`,
       );
     });
 
-    app.on("window-all-closed", () => {
-      if (process.platform !== "darwin") app.quit();
+    // NO cerramos la app al cerrar la ventana: sigue viva en segundo plano
+    // escuchando el wake word. Solo se sale con Ctrl+Alt+Q.
+    app.on("window-all-closed", (e) => {
+      if (!app.isQuitting) e.preventDefault();
+    });
+
+    app.on("will-quit", () => {
+      globalShortcut.unregisterAll();
     });
   }
 }

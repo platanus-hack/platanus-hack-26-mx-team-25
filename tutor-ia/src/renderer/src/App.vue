@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import mermaid from "mermaid";
 import { useAvatarAnimation } from "./composables/useAvatarAnimation";
 import { useTutorSession } from "./composables/useTutorSession";
+import { WakeWordDetector } from "./voice/wakeword.js";
 
 const pizarraContainer = ref(null);
 const canvas = ref(null);
@@ -50,6 +51,27 @@ const { status, micActive, micEmoji, bootstrap, modoRatonActivo } = useTutorSess
   setAvatarEstado,
 });
 
+// ─── WAKE WORD: "Hola rana" ────────────────────────────────────────────────
+// La ventana vive oculta en segundo plano. Aquí solo escuchamos la palabra
+// mágica; al oírla mostramos la interfaz y arrancamos la sesión completa
+// (cámara, micrófono y saludo del tutor).
+let wakeDetector = null;
+let sesionIniciada = false;
+
+async function onWakeWord() {
+  if (sesionIniciada) return; // Evita doble arranque
+  sesionIniciada = true;
+  console.log("[WakeWord] '¡Hola rana!' detectado → abriendo interfaz");
+
+  // 1. Pedimos al proceso principal que muestre y enfoque la ventana.
+  if (window.electronAPI?.mostrarApp) {
+    await window.electronAPI.mostrarApp();
+  }
+
+  // 2. Arrancamos la sesión real del tutor (cámara, mic, voz, saludo).
+  await bootstrap();
+}
+
 function manejarAtajos(e) {
   if (e.key.toLowerCase() === "v") {
     mostrarVision.value = !mostrarVision.value;
@@ -60,18 +82,10 @@ function manejarAtajos(e) {
   }
 }
 
-// RENDERIZADO REACTIVO DE MERMAID
-watch([activeMode, mermaidContent], async ([newMode, newContent]) => {
-  if (newMode === 'mermaid' && newContent && mermaidContainerRef.value) {
-    try {
-      mermaidContainerRef.value.innerHTML = '';
-      const { svg } = await mermaid.render('mermaid-svg', newContent);
-      mermaidContainerRef.value.innerHTML = svg;
-    } catch (error) {
-      console.error("Error dibujando diagrama Mermaid:", error);
-    }
-  }
-});
+// El renderizado de Mermaid lo maneja por completo useTutorSession.renderMermaid()
+// (con pan/zoom, resaltado e IDs únicos). Antes había aquí un watch que también
+// renderizaba sobre el mismo contenedor y chocaba con él, dejando el nodo SVG
+// nulo a mitad de dibujo ("Cannot read properties of null"). Se eliminó.
 
 onMounted(async () => {
   // Inicializamos Mermaid con un tema oscuro/hacker
@@ -83,12 +97,22 @@ onMounted(async () => {
   await cargarManifest();
   setAvatarEstado("hablando");
   iniciarFlotacion(pizarraContainer);
-  await bootstrap();
+
+  // NO arrancamos la sesión todavía: esperamos el wake word "Hola rana".
+  wakeDetector = new WakeWordDetector(onWakeWord);
+  wakeDetector.start();
+
+  // Respaldo: si el proceso principal abre la ventana (atajo Ctrl+Alt+Z),
+  // también arrancamos la sesión.
+  if (window.electronAPI?.onActivarSesion) {
+    window.electronAPI.onActivarSesion(onWakeWord);
+  }
 });
 
 onUnmounted(() => {
   window.removeEventListener("keydown", manejarAtajos);
   window.removeEventListener("wheel", manejarZoom);
+  if (wakeDetector) wakeDetector.stop();
 });
 </script>
 

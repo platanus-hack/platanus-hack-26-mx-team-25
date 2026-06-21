@@ -50,11 +50,24 @@ export class SpeechToText {
             }
 
             this.mediaRecorder.onstop = async () => {
-                // Empaquetar el audio
-                const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-                const audioFile = new File([audioBlob], "instruccion.webm", { type: 'audio/webm' });
+                // Liberamos el micrófono cuanto antes.
+                this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
 
-                console.log("Audio capturado, enviando a Groq (Whisper)...");
+                // Empaquetar el audio. IMPORTANTE: en Electron, subir directamente
+                // un Blob de MediaRecorder por fetch/FormData falla con
+                // net::ERR_FAILED (-2) porque Chromium no puede leer su tamaño.
+                // Lo materializamos en memoria (ArrayBuffer) para evitarlo.
+                const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+
+                if (audioBlob.size === 0) {
+                    reject("No se capturó audio. Intenta de nuevo.");
+                    return;
+                }
+
+                const buffer = await audioBlob.arrayBuffer();
+                const audioFile = new File([buffer], "instruccion.webm", { type: 'audio/webm' });
+
+                console.log(`Audio capturado (${audioFile.size} bytes), enviando a Groq (Whisper)...`);
 
                 try {
                     const formData = new FormData();
@@ -80,9 +93,6 @@ export class SpeechToText {
                         return; // Rompemos la ejecución aquí
                     }
 
-                    // Liberar el micrófono de este proceso
-                    this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                    
                     resolve(data.text);
                 } catch (error) {
                     console.error("Error crítico de red o de código:", error);

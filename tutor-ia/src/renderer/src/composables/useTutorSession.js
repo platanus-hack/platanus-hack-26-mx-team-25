@@ -111,14 +111,17 @@ export function useTutorSession({
         
         container.innerHTML = ''
         const uniqueId = `mermaid-${Date.now()}`
-        container.innerHTML = `<div class="mermaid" id="${uniqueId}" style="width: 100%; height: 100%;">${codigoLimpio}</div>`
-
-        await nextTick()
 
         try {
-            await mermaid.run({ nodes: [document.getElementById(uniqueId)] })
+            // mermaid.render() dibuja en su propio nodo temporal (en el body) y
+            // devuelve el SVG ya construido. Es robusto aunque el contenedor esté
+            // recién mostrado o con transform: evita el "getAttribute of null" que
+            // daba mermaid.run() al renderizar en el sitio. ID único por llamada
+            // para no chocar con nodos temporales de renders previos.
+            const { svg } = await mermaid.render(uniqueId, codigoLimpio)
+            container.innerHTML = svg
 
-            const svgElement = document.querySelector(`#${uniqueId} svg`)
+            const svgElement = container.querySelector('svg')
             if (svgElement) {
                 svgElement.removeAttribute('style')
                 svgElement.setAttribute('width', '100%')
@@ -160,6 +163,7 @@ export function useTutorSession({
 
         } catch (error) {
             console.error('Error al renderizar Mermaid:', error)
+            console.error('Código Mermaid que falló:\n', codigoLimpio)
             container.innerHTML = '<p style="color: #ef4444; padding: 20px;">⚠️ Error de sintaxis en el diagrama del Tutor.</p>'
         }
     }
