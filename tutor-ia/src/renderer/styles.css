@@ -64,6 +64,11 @@ body {
     transition: background 0.2s ease;
 }
 
+.mic-container.mic-active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
 .mic-icon {
     font-size: 20px;
     line-height: 1;
