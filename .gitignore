@@ -2,3 +2,4 @@ node_modules/
 dist/
 tutor-ia/.env
 *.env
+package-lock.json
