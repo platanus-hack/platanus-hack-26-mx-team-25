@@ -9,11 +9,11 @@ const ANIMATION_BASE_PATH = './assets/animation'
 // apuntan ahí para que el avatar se vea mientras generas el resto.
 // Cuando tengas IDLE/thinking/angry listos, revierte a los mapeos reales.
 const ESTADO_A_CARPETA = {
-    reposo: 'happy',
+    reposo: 'IDLE',
     hablando: 'happy',
-    pensando: 'happy',
-    confundido: 'happy',
-    escuchando: 'happy',
+    pensando: 'conffused',
+    confundido: 'IDLE',
+    escuchando: 'IDLE',
 }
 
 export function useAvatarAnimation() {
