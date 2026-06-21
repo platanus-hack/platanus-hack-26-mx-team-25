@@ -23,7 +23,7 @@ const CONFIG = {
   
   WINDOW: { width: 1050, height: 750 },
   PATHS: {
-    RENDER_HTML: path.join(__dirname, '..', 'render', 'index.html'),
+    RENDER_HTML: path.join(__dirname, '..', 'renderer', 'index.html'),
     PRELOAD_JS: path.join(__dirname, 'preload.js'),
     // Si está empaquetada, usa la ruta segura del OS. Si no, usa tu carpeta local para que las veas en VS Code.
     NOTES_DIR: app.isPackaged 
@@ -262,6 +262,12 @@ class AppOrchestrator {
         console.error("[Orquestador IPC Error]:", error);
         return { success: false, error: error.message };
       }
+    });
+
+    // 3. [TU CÓDIGO AÑADIDO] Checkpoint para el motor de voz (Groq)
+    ipcMain.handle('get-groq-key', () => {
+      // Asegúrate de que process.env.GROQ_API_KEY esté definido arriba en su archivo
+      return process.env.GROQ_API_KEY; 
     });
   }
 
