@@ -1,100 +1,74 @@
-/**
- * @fileoverview Capa de Orquestación (Main Process) - Tutor IA
- * @author Equipo 25 - Platanus Hack 26
- * @architecture Orientada a Servicios
- */
-
-const { app, BrowserWindow, Tray, Menu, session, ipcMain } = require("electron");
+"use strict";
+const { app, BrowserWindow, session, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const Anthropic = require("@anthropic-ai/sdk");
 require("dotenv").config();
-
-// ============================================================================
-// [CONFIG] CAPA DE CONFIGURACIÓN
-// ============================================================================
 const CONFIG = {
   MODELS: {
-    DEV: "claude-haiku-4-5-20251001", // Modo Ahorro ($50 USD de presupuesto)
-    JUECES: "claude-sonnet-4-6", // Modo Pitch (Calidad pedagógica premium)
+    DEV: "claude-haiku-4-5-20251001",
+    // Modo Ahorro ($50 USD de presupuesto)
+    JUECES: "claude-sonnet-4-6"
+    // Modo Pitch (Calidad pedagógica premium)
   },
-
   ACTIVE_MODEL: "claude-haiku-4-5-20251001",
-
   WINDOW: { width: 1050, height: 750 },
   PATHS: {
     RENDER_HTML: path.join(__dirname, "..", "renderer", "index.html"),
     PRELOAD_JS: path.join(__dirname, "..", "preload", "index.js"),
     // Si está empaquetada, usa la ruta segura del OS. Si no, usa tu carpeta local para que las veas en VS Code.
-    NOTES_DIR: app.isPackaged
-      ? path.join(app.getPath("userData"), "notas")
-      : path.join(__dirname, "..", "..", "notas"),
-  },
+    NOTES_DIR: app.isPackaged ? path.join(app.getPath("userData"), "notas") : path.join(__dirname, "..", "..", "notas")
+  }
 };
-
-// ============================================================================
-// [SERVICE 1] SERVICIO DE PERSISTENCIA (SRP: Single Responsibility)
-// Responsabilidad exclusiva: Leer y escribir en el sistema de archivos local.
-// ============================================================================
 class StorageService {
   constructor(baseDirectory) {
     this.baseDir = baseDirectory;
-    this.postItsPath = path.join(this.baseDir, 'postits_estado.json');
+    this.postItsPath = path.join(this.baseDir, "postits_estado.json");
     this._ensureDirectoryExists();
   }
-
   _ensureDirectoryExists() {
     if (!fs.existsSync(this.baseDir)) {
       fs.mkdirSync(this.baseDir, { recursive: true });
     }
-    // Inicializar el archivo de Post-its si no existe
     if (!fs.existsSync(this.postItsPath)) {
-      fs.writeFileSync(this.postItsPath, JSON.stringify({ postits: [] }), 'utf-8');
+      fs.writeFileSync(this.postItsPath, JSON.stringify({ postits: [] }), "utf-8");
     }
   }
-
   /**
    * Guarda una nota larga en Markdown (Libreta física del alumno)
    */
   saveMarkdownNote(contenido) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
     const filePath = path.join(this.baseDir, `nota_${timestamp}.md`);
     fs.writeFileSync(filePath, contenido, "utf-8");
     return filePath;
   }
-
   /**
    * Lee los Post-its activos (Conceptos ancla de la sesión actual)
    * @returns {string[]} Arreglo de ideas clave abreviadas
    */
   getActivePostIts() {
     try {
-      const data = fs.readFileSync(this.postItsPath, 'utf-8');
+      const data = fs.readFileSync(this.postItsPath, "utf-8");
       return JSON.parse(data).postits || [];
     } catch (e) {
       console.error("Error leyendo Post-its:", e);
       return [];
     }
   }
-
   /**
    * Añade o actualiza la configuración semántica de Post-its activos
    * @param {string[]} nuevosPostIts 
    */
   updatePostIts(nuevosPostIts) {
     try {
-      fs.writeFileSync(this.postItsPath, JSON.stringify({ postits: nuevosPostIts }, null, 2), 'utf-8');
+      fs.writeFileSync(this.postItsPath, JSON.stringify({ postits: nuevosPostIts }, null, 2), "utf-8");
       console.log("[Storage] Post-its semánticos actualizados localmente.");
     } catch (e) {
       console.error("Error guardando Post-its:", e);
     }
   }
 }
-
-// ============================================================================
-// [SCHEMA] DEFINICIÓN DE CONTRATOS (OCP: Open/Closed Principle)
-// Abierto a la extensión de nuevas tools, cerrado a la modificación de las base.
-// ============================================================================
 class TutorSchemas {
   static getUIContractTool() {
     return {
@@ -180,56 +154,43 @@ class TutorSchemas {
                 contenido: { type: "string" },
                 color: { type: "string" }
               },
-              required: ["comando"],
-            },
-          },
+              required: ["comando"]
+            }
+          }
         },
         required: ["texto_a_hablar", "avatar_estado"]
       }
     };
   }
-
   static getSaveNotesTool() {
     return {
       name: "guardar_apuntes",
-      description:
-        "Crea un archivo .md en el disco del usuario con un resumen de valor de la lección.",
+      description: "Crea un archivo .md en el disco del usuario con un resumen de valor de la lección.",
       input_schema: {
         type: "object",
         properties: {
           contenido_markdown: {
             type: "string",
-            description: "Apuntes en formato Markdown.",
-          },
+            description: "Apuntes en formato Markdown."
+          }
         },
-        required: ["contenido_markdown"],
-      },
+        required: ["contenido_markdown"]
+      }
     };
   }
 }
-
-// ============================================================================
-// [SERVICE 2] SERVICIO IA (DIP: Dependency Inversion Principle)
-// Depende de abstracciones (StorageService), no de implementaciones de bajo nivel.
-// ============================================================================
 class AgentService {
   /** @param {StorageService} storageService */
   constructor(storageService) {
     this.anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     this.storage = storageService;
-    
-    // Ventana deslizante para mantener memoria conversacional inmediata sin explotar el presupuesto
-    this.chatHistory = []; 
-    this.MAX_HISTORY_PAIRS = 3; // Solo guardamos los últimos 3 turnos de interacción directa
+    this.chatHistory = [];
+    this.MAX_HISTORY_PAIRS = 3;
   }
-
   _buildSystemPrompt() {
     const postItsActivos = this.storage.getActivePostIts();
-    
-    const memoriaSemantica = postItsActivos.length > 0 
-      ? `LIBRETA DE POST-ITS ACTUAL:\n${postItsActivos.map(p => `- ${p}`).join('\n')}` 
-      : `El alumno se encuentra en un lienzo limpio. No hay post-its guardados.`;
-
+    const memoriaSemantica = postItsActivos.length > 0 ? `LIBRETA DE POST-ITS ACTUAL:
+${postItsActivos.map((p) => `- ${p}`).join("\n")}` : `El alumno se encuentra en un lienzo limpio. No hay post-its guardados.`;
     return `Eres Tutor IA, un profesor socrático de excelencia académica, minimalista y directo.
     
     ${memoriaSemantica}
@@ -258,18 +219,14 @@ class AgentService {
     12. COMPATIBILIDAD: Si el sistema o el modelo antiguo sigue enviando 'texto_a_hablar' o 'pasos_dibujo', puedes usar esos campos como respaldo, pero prioriza 'secuencia' y 'bloque_codigo'.
     `;
   }
-
   /**
    * @param {string} promptUsuario 
    * @returns {Promise<Object>} Contrato JSON verificado para el Renderer
    */
   async processUserPrompt(promptUsuario) {
-    // Añadimos el nuevo mensaje del usuario a la ventana deslizante
     this.chatHistory.push({ role: "user", content: promptUsuario });
-
-    // Definición de herramientas configuradas para recibir respuestas estructuradas
     const tools = [
-      TutorSchemas.getUIContractTool(), 
+      TutorSchemas.getUIContractTool(),
       {
         name: "guardar_apuntes",
         description: "ÚSALA OBLIGATORIAMENTE si el usuario dice 'anota esto', 'guarda esto', o para consolidar conocimiento clave.",
@@ -277,8 +234,8 @@ class AgentService {
           type: "object",
           properties: {
             contenido_markdown: { type: "string", description: "El apunte largo en formato Markdown." },
-            postits_actualizados: { 
-              type: "array", 
+            postits_actualizados: {
+              type: "array",
               items: { type: "string" },
               description: "Arreglo con TODOS los post-its anteriores MÁS el nuevo. Cada string DEBE empezar con [Tema] - Idea. Ejemplo: '[Robótica] - Los pines I2C son SDA y SCL'."
             }
@@ -287,100 +244,69 @@ class AgentService {
         }
       }
     ];
-
     try {
       const response = await this.anthropic.messages.create({
         model: CONFIG.ACTIVE_MODEL,
         max_tokens: 600,
         system: this._buildSystemPrompt(),
-        messages: this.chatHistory, // Enviamos el historial controlado
-        tools: tools,
+        messages: this.chatHistory,
+        // Enviamos el historial controlado
+        tools,
         tool_choice: { type: "tool", name: "actualizar_interfaz" }
       });
-
-      const uiBlock = response.content.find(b => b.type === 'tool_use' && b.name === 'actualizar_interfaz');
-      const notesBlock = response.content.find(b => b.type === 'tool_use' && b.name === 'guardar_apuntes');
-
-      // Si Claude decide actualizar la memoria intermedia de Post-its:
+      const uiBlock = response.content.find((b) => b.type === "tool_use" && b.name === "actualizar_interfaz");
+      const notesBlock = response.content.find((b) => b.type === "tool_use" && b.name === "guardar_apuntes");
       if (notesBlock) {
-        // 1. Guardamos el Markdown histórico
         this.storage.saveMarkdownNote(notesBlock.input.contenido_markdown);
-        // 2. Sobrescribimos el JSON local con la nueva libreta de conceptos consolidados
         this.storage.updatePostIts(notesBlock.input.postits_actualizados);
       }
-
       if (!uiBlock) throw new Error("Claude no generó el bloque 'actualizar_interfaz'.");
-
-      // Guardamos la respuesta del asistente en el historial para mantener coherencia conversacional
       this.chatHistory.push({ role: "assistant", content: JSON.stringify(uiBlock.input) });
-
-      // Recorte estricto de la ventana deslizante para no acumular basura de tokens
       if (this.chatHistory.length > this.MAX_HISTORY_PAIRS * 2) {
         this.chatHistory = this.chatHistory.slice(-this.MAX_HISTORY_PAIRS * 2);
       }
-
       return uiBlock.input;
-
     } catch (error) {
       console.error("[AgentService Error]:", error);
       throw error;
     }
   }
 }
-
-// ============================================================================
-// [SERVICE 3] CONTROLADOR DE VENTANA DE ELECTRON
-// ============================================================================
 class WindowManager {
   constructor(config) {
     this.config = config;
     this.win = null;
   }
-
   init() {
-    // Parche nativo para que Windows no bloquee el permiso del micrófono
     session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => callback(true));
-
     this.win = new BrowserWindow({
       width: this.config.WINDOW.width,
       height: this.config.WINDOW.height,
       webPreferences: {
         preload: this.config.PATHS.PRELOAD_JS,
         contextIsolation: true,
-        nodeIntegration: false,
-      },
+        nodeIntegration: false
+      }
     });
-
     if (!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]) {
       this.win.loadURL(process.env["ELECTRON_RENDERER_URL"]);
     } else {
       this.win.loadFile(this.config.PATHS.RENDER_HTML);
     }
-
-    this.win.webContents.openDevTools(); // Consola abierta para debuggear rápido
+    this.win.webContents.openDevTools();
   }
 }
-
-// ============================================================================
-// [CONTROLLER] ORQUESTADOR PRINCIPAL (Punto de unión de IPCs)
-// ============================================================================
 class AppOrchestrator {
   constructor() {
     this.storage = new StorageService(CONFIG.PATHS.NOTES_DIR);
     this.agent = new AgentService(this.storage);
     this.windowManager = new WindowManager(CONFIG);
   }
-
   _registerIPCCheckpoints() {
-    // 1. Checkpoint de bienvenida (Arranque limpio)
     ipcMain.handle("inicializar-tutor", async () => {
       try {
-        // CORRECCIÓN: Usamos getActivePostIts en lugar del viejo getPastTopics
         const postits = this.storage.getActivePostIts();
-        const textoSaludo = postits.length > 0
-          ? `¡Hola de nuevo! Veo que tenemos ${postits.length} conceptos guardados en tu libreta. ¿Continuamos repasando eso o empezamos un tema nuevo?`
-          : `¡Hola! Soy tu Tutor IA. ¿Qué tema te gustaría aprender hoy?`;
-
+        const textoSaludo = postits.length > 0 ? `¡Hola de nuevo! Veo que tenemos ${postits.length} conceptos guardados en tu libreta. ¿Continuamos repasando eso o empezamos un tema nuevo?` : `¡Hola! Soy tu Tutor IA. ¿Qué tema te gustaría aprender hoy?`;
         return {
           success: true,
           data: {
@@ -393,17 +319,15 @@ class AppOrchestrator {
                 x: 50,
                 y: 100,
                 contenido: "¿Qué aprenderemos hoy?",
-                color: "#4f46e5",
-              },
-            ],
-          },
+                color: "#4f46e5"
+              }
+            ]
+          }
         };
       } catch (error) {
         return { success: false, error: error.message };
       }
     });
-
-    // 2. Checkpoint de conversación (Interacción con Claude)
     ipcMain.handle("chat-with-agent", async (event, promptUsuario) => {
       try {
         const uiJsonPayload = await this.agent.processUserPrompt(promptUsuario);
@@ -413,36 +337,25 @@ class AppOrchestrator {
         return { success: false, error: error.message };
       }
     });
-
-    // 3. Checkpoint para el motor de voz (Groq)
     ipcMain.handle("get-groq-key", () => {
-      // Asegúrate de que process.env.GROQ_API_KEY esté definido arriba en su archivo
       return process.env.GROQ_API_KEY;
     });
-
-    // 4. Checkpoint para el motor de voz (ElevenLabs)
     ipcMain.handle("get-elevenlabs-key", () => {
       return process.env.ELEVENLABS_API_KEY;
     });
   }
-
   start() {
     app.whenReady().then(() => {
       this.windowManager.init();
       this._registerIPCCheckpoints();
       console.log(
-        `[Orquestador Boot] Listo. Modelo en uso: ${CONFIG.ACTIVE_MODEL}`,
+        `[Orquestador Boot] Listo. Modelo en uso: ${CONFIG.ACTIVE_MODEL}`
       );
     });
-
     app.on("window-all-closed", () => {
       if (process.platform !== "darwin") app.quit();
     });
   }
 }
-
-// ============================================================================
-// BOOTSTRAP DE LA APLICACIÓN
-// ============================================================================
 const tutorApp = new AppOrchestrator();
 tutorApp.start();
