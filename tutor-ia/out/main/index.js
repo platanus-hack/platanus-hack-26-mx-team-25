@@ -278,9 +278,7 @@ class WindowManager {
     this.win = null;
   }
   init() {
-    session.defaultSession.setPermissionRequestHandler(
-      (webContents, permission, callback) => callback(true)
-    );
+    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => callback(true));
     this.win = new BrowserWindow({
       width: this.config.WINDOW.width,
       height: this.config.WINDOW.height,

@@ -1,9 +1,8 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { SpeechToText } from '../voice/stt.js'
 import { TextToSpeech } from '../voice/tts.js'
-import { HandTracker } from '../vision/HandTracker.js' 
+import { HandTracker } from '../vision/HandTracker.js'
 import mermaid from 'mermaid'
-import { SpeechToText } from '../voice/stt.js'
 import svgPanZoom from 'svg-pan-zoom'
 
 /**
@@ -13,7 +12,13 @@ import svgPanZoom from 'svg-pan-zoom'
  * @param {import('vue').Ref<HTMLElement|null>} deps.codeBlockRef
  * @param {(estado: string) => void} deps.setAvatarEstado
  */
-export function useTutorSession({ canvasRef, debugCanvasRef, setAvatarEstado }) {
+export function useTutorSession({
+    canvasRef,
+    mermaidContainerRef,
+    codeBlockRef,
+    debugCanvasRef,
+    setAvatarEstado
+}) {
     const status = ref('Iniciando sistema...')
     const micActive = ref(false)
     const micEmoji = ref('🎤')

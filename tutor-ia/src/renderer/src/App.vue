@@ -4,8 +4,10 @@ import { useAvatarAnimation } from "./composables/useAvatarAnimation";
 import { useTutorSession } from "./composables/useTutorSession";
 
 const pizarraContainer = ref(null);
-const canvas = ref(null);
-const debugCanvas = ref(null);
+const canvasRef = ref(null);
+const mermaidContainerRef = ref(null);
+const codeBlockRef = ref(null);
+const debugCanvasRef = ref(null);
 const mostrarVision = ref(false);
 
 const {
@@ -16,12 +18,22 @@ const {
   iniciarFlotacion,
 } = useAvatarAnimation();
 
-const { status, micActive, micEmoji, bootstrap, modoRatonActivo } =
-  useTutorSession({
-    canvasRef: canvas,
-    debugCanvasRef: debugCanvas,
-    setAvatarEstado,
-  });
+const {
+  status,
+  micActive,
+  micEmoji,
+  activeMode,
+  codeLanguage,
+  codeContent,
+  bootstrap,
+  modoRatonActivo,
+} = useTutorSession({
+  canvasRef,
+  mermaidContainerRef,
+  codeBlockRef,
+  debugCanvasRef,
+  setAvatarEstado,
+});
 
 // Función que escucha el teclado
 function manejarAtajoVision(e) {
@@ -45,58 +57,52 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header class="app-header">
-    <h1 class="app-title">ZenZen</h1>
-    <p class="app-status">{{ status }}</p>
-    <div class="mic-container" :class="{ 'mic-active': micActive }">
-      <span class="mic-icon">{{ micEmoji }}</span>
-    </div>
-  </header>
-
-  <main class="board-wrapper">
-    <div ref="pizarraContainer" id="pizarra-container">
-      <canvas ref="canvas" width="1400" height="800"></canvas>
-      <img class="avatar-float" :src="avatarSrc" :style="{ top: avatarPos.top + 'px', left: avatarPos.left + 'px' }"
-        alt="ZenZen" />
-    </div>
-  </main>
-
- 
-</template>
-    <div ref="pizarraContainer" id="pizarra-container" class="pizarra-root">
-      
-      <canvas 
-        ref="canvasRef" 
-        width="1400" 
-        height="800" 
-        v-show="activeMode === 'canvas'"
-        class="board-layer"
-      ></canvas>
-
-      <div 
-        ref="mermaidContainerRef" 
-        id="mermaidContainer" 
-        v-show="activeMode === 'mermaid'"
-        class="board-layer mermaid-layer"
-      ></div>
-
-      <div 
-        id="codeContainer" 
-        v-show="activeMode === 'code'"
-        class="board-layer code-layer"
-      >
-        <pre><code ref="codeBlockRef" :class="'language-' + codeLanguage">{{ codeContent }}</code></pre>
+  <div id="app-root">
+    
+    <header class="app-header">
+      <h1 class="app-title">ZenZen</h1>
+      <p class="app-status">{{ status }}</p>
+      <div class="mic-container" :class="{ 'mic-active': micActive }">
+        <span class="mic-icon">{{ micEmoji }}</span>
       </div>
+    </header>
 
-      <img
-          class="avatar-float"
-          :src="avatarSrc"
-          :style="{ top: avatarPos.top + 'px', left: avatarPos.left + 'px' }"
-          alt="ZenZen"
-      />
-    </div>
-  </main>
-</template>
+    <main class="board-wrapper">
+      <div ref="pizarraContainer" id="pizarra-container" class="pizarra-root">
+        
+        <canvas 
+          ref="canvasRef" 
+          width="1400" 
+          height="800" 
+          v-show="activeMode === 'canvas'"
+          class="board-layer"
+        ></canvas>
+
+        <div 
+          ref="mermaidContainerRef" 
+          id="mermaidContainer" 
+          v-show="activeMode === 'mermaid'"
+          class="board-layer mermaid-layer"
+        ></div>
+
+        <div 
+          id="codeContainer" 
+          v-show="activeMode === 'code'"
+          class="board-layer code-layer"
+        >
+          <pre><code ref="codeBlockRef" :class="'language-' + codeLanguage">{{ codeContent }}</code></pre>
+        </div>
+
+        <img
+            class="avatar-float"
+            :src="avatarSrc"
+            :style="{ top: avatarPos.top + 'px', left: avatarPos.left + 'px' }"
+            alt="ZenZen"
+        />
+        
+      </div> </main>
+
+  </div> </template>
 
 <style scoped>
 /* =========================================================
