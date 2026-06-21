@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>Tutor IA - Hackatón</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: row; height: 100vh; background: #121212; color: #fff; margin: 0; padding: 20px; box-sizing: border-box; gap: 20px; }
     #panel-izquierdo { width: 30%; display: flex; flex-direction: column; background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
@@ -17,10 +19,72 @@
     
     #avatar-box { font-size: 80px; text-align: center; margin: 30px 0; background: #252529; padding: 40px 20px; border-radius: 12px; border: 1px solid #333; }
     #status { font-size: 18px; line-height: 1.5; opacity: 0.9; min-height: 80px; }
+
+    #mermaidContainer { 
+      background: #1a1a1a; 
+      border: 2px solid #333; 
+      border-radius: 8px; 
+      width: 100%; 
+      flex-grow: 1; 
+      height: 100%; /* 🚨 Asegúrate de que esta línea exista */
+      margin-top: 10px; 
+      display: none; 
+      overflow: hidden; 
+      padding: 10px;
+      box-sizing: border-box;
+      position: relative; 
+    }
+    #svg-pan-zoom-controls {
+        transform: translate(0, 0) !important; /* Estabiliza los botones */
+    }
+    /* 1. Hacemos que las flechas se dibujen solas de inicio a fin */
+    .mermaid .edgePath .path {
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      animation: drawLine 2s ease-in-out forwards;
+    }
+    
+    /* 2. Hacemos que las cajas y textos aparezcan suavemente */
+    .mermaid .node, .mermaid .edgeLabel {
+      opacity: 0;
+      animation: fadeIn 1s ease-in forwards;
+      animation-delay: 0.5s; /* Espera medio segundo a que la flecha empiece a dibujarse */
+    }
+
+    /* Definición de los fotogramas clave */
+    @keyframes drawLine {
+      to { stroke-dashoffset: 0; }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    #codeContainer {
+        display: none; 
+        background: #2d2d2d; /* Fondo estilo editor */
+        border: 2px solid #333; 
+        border-radius: 8px; 
+        width: 100%; 
+        flex-grow: 1; 
+        margin-top: 10px; 
+        overflow: auto; 
+        box-sizing: border-box;
+    }
+    #codeContainer pre {
+        margin: 0;
+        padding: 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        height: 100%;
+        box-sizing: border-box;
+    }
   </style>
 </head>
 <body>
-
+  <div id="codeContainer">
+        <pre><code id="codeBlock" class="language-python"></code></pre>
+    </div>
   <div id="panel-izquierdo">
     <div>
       <h3 style="margin-top: 0; color: #a5b4fc;">🐸 Tutor Socrático</h3>
@@ -36,9 +100,16 @@
 
   <div id="panel-derecho">
     <h3 style="margin-top: 0; color: #a5b4fc;">📋 Pizarra Activa</h3>
+    
     <canvas id="pizarraCanvas" width="700" height="500"></canvas>
+    
+    <div id="mermaidContainer"></div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
   <script type="module" src="./app.js"></script>
 </body>
 
