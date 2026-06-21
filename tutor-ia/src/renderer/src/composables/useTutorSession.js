@@ -1,12 +1,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
-// Ajusta esta ruta según dónde quede stt.js en tu nueva estructura Vue
 import { SpeechToText } from '../voice/stt.js'
+import { TextToSpeech } from '../voice/tts.js' 
 
 /**
  * @param {Object} deps
  * @param {import('vue').Ref<HTMLCanvasElement|null>} deps.canvasRef
  * @param {(estado: string, opts?: { onComplete?: () => void }) => void} deps.setAvatarEstado
- *        Viene de useAvatarAnimation() — se inyecta para no duplicar esa lógica aquí.
  */
 export function useTutorSession({ canvasRef, setAvatarEstado }) {
     const status = ref('Iniciando sistema...')
@@ -14,8 +13,10 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
     const micEmoji = ref('🎤')
 
     const grabadora = new SpeechToText()
+    // 2. Instanciamos el nuevo motor de ElevenLabs
+    const tts = new TextToSpeech() 
+    
     let isRecording = false
-
     let secuenciaActual = []
     let pasoActualIndex = 0
     let animFrameId = null
@@ -29,7 +30,7 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
     }
 
     // ---------------------------------------------------------------------
-    // DIBUJO EN CANVAS
+    // DIBUJO EN CANVAS (Sin cambios)
     // ---------------------------------------------------------------------
     function animarDibujo(dibujo, duracionMs, onComplete) {
         const context = getCtx()
@@ -67,7 +68,6 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
             case 'limpiar':
                 context.clearRect(0, 0, canvasEl.width, canvasEl.height)
                 break
-
             case 'linea': {
                 const xActual = paso.x + (paso.x2 - paso.x) * progreso
                 const yActual = paso.y + (paso.y2 - paso.y) * progreso
@@ -77,7 +77,6 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
                 context.stroke()
                 break
             }
-
             case 'circulo': {
                 const anguloActual = (2 * Math.PI) * progreso
                 context.beginPath()
@@ -85,7 +84,6 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
                 context.stroke()
                 break
             }
-
             case 'rectangulo': {
                 context.beginPath()
                 if (progreso < 0.25) {
@@ -110,7 +108,6 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
                 context.stroke()
                 break
             }
-
             case 'texto': {
                 if (paso.contenido) {
                     const caracteresMostrar = Math.floor(paso.contenido.length * progreso)
@@ -128,17 +125,15 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
     // ---------------------------------------------------------------------
     // ORQUESTACIÓN: texto + dibujo sincronizados, paso a paso
     // ---------------------------------------------------------------------
-    function procesarContratoInterfaz(data) {
+    async function procesarContratoInterfaz(data) {
         console.log('Contrato recibido:', data)
 
         if (data.avatar_estado) {
             setAvatarEstado(data.avatar_estado)
         }
 
-        window.speechSynthesis.cancel()
         if (animFrameId) cancelAnimationFrame(animFrameId)
 
-        // Formato nuevo: { secuencia: [{ texto, avatar_estado?, dibujo }] }
         if (data.secuencia && Array.isArray(data.secuencia)) {
             secuenciaActual = data.secuencia
             pasoActualIndex = 0
@@ -146,18 +141,20 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
             return
         }
 
-        // Compatibilidad con el formato viejo: { texto_a_hablar, pasos_dibujo }
         if (data.texto_a_hablar || data.pasos_dibujo) {
             console.warn('⚠️ El agente sigue enviando el formato viejo (texto_a_hablar/pasos_dibujo). Sin sincronización fina hasta migrar el prompt al formato "secuencia".')
 
             if (data.texto_a_hablar) {
                 status.value = data.texto_a_hablar
-                const utterance = new SpeechSynthesisUtterance(data.texto_a_hablar)
-                utterance.lang = 'es-MX'
-                utterance.rate = 1.05
-                utterance.onstart = () => setAvatarEstado('hablando')
-                utterance.onend = () => setAvatarEstado('reposo')
-                window.speechSynthesis.speak(utterance)
+                setAvatarEstado('hablando')
+                try {
+                    // 3. Uso simple para el fallback
+                    await tts.speak(data.texto_a_hablar) 
+                } catch (e) {
+                    console.error("Error TTS fallback:", e)
+                } finally {
+                    setAvatarEstado('reposo')
+                }
             }
 
             if (data.pasos_dibujo && Array.isArray(data.pasos_dibujo)) {
@@ -173,7 +170,8 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
         }
     }
 
-    function ejecutarSiguientePaso() {
+    // 4. Convertimos a async para esperar a que termine ElevenLabs
+    async function ejecutarSiguientePaso() {
         if (pasoActualIndex >= secuenciaActual.length) {
             setAvatarEstado('reposo')
             status.value = ''
@@ -186,34 +184,28 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
         if (paso.texto) {
             status.value = paso.texto
 
-            const utterance = new SpeechSynthesisUtterance(paso.texto)
-            utterance.lang = 'es-MX'
-            utterance.rate = 1.05
-
             const palabras = paso.texto.split(/\s+/).length
             const duracionEstimadaMs = (palabras / 2.5) * 1000
 
-            utterance.onstart = () => {
-                if (paso.dibujo) animarDibujo(paso.dibujo, duracionEstimadaMs)
+            // Disparamos la animación del dibujo en paralelo
+            if (paso.dibujo) animarDibujo(paso.dibujo, duracionEstimadaMs)
+
+            try {
+                // Hacemos una pausa en la ejecución hasta que el audio termine
+                await tts.speak(paso.texto)
+            } catch (error) {
+                console.error("Error reproduciendo paso TTS:", error)
             }
 
-            utterance.onend = () => {
-                if (paso.dibujo) {
-                    if (animFrameId) cancelAnimationFrame(animFrameId)
-                    dibujarPasoConProgreso(paso.dibujo, 1)
-                }
-                setAvatarEstado('reposo')
-                pasoActualIndex++
-                ejecutarSiguientePaso()
+            // Cuando termina la promesa (el audio), finalizamos el dibujo y avanzamos
+            if (paso.dibujo) {
+                if (animFrameId) cancelAnimationFrame(animFrameId)
+                dibujarPasoConProgreso(paso.dibujo, 1)
             }
-
-            utterance.onerror = () => {
-                setAvatarEstado('reposo')
-                pasoActualIndex++
-                ejecutarSiguientePaso()
-            }
-
-            window.speechSynthesis.speak(utterance)
+            
+            setAvatarEstado('reposo')
+            pasoActualIndex++
+            ejecutarSiguientePaso()
 
         } else if (paso.dibujo) {
             animarDibujo(paso.dibujo, 600, () => {
@@ -281,6 +273,9 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
     // ---------------------------------------------------------------------
     async function bootstrap() {
         try {
+            // 5. Inicializamos TTS junto con los demás servicios
+            await tts.init()
+            
             grabadora.apiKey = await window.electronAPI.getGroqKey()
             if (!grabadora.apiKey) console.warn('Falta clave de Groq en .env')
 
@@ -304,7 +299,11 @@ export function useTutorSession({ canvasRef, setAvatarEstado }) {
         window.removeEventListener('keydown', manejarKeydown)
         window.removeEventListener('keyup', manejarKeyup)
         if (animFrameId) cancelAnimationFrame(animFrameId)
-        window.speechSynthesis.cancel()
+        
+        // Detener audio de ElevenLabs si se desmonta el componente
+        if (tts.currentAudio) {
+            tts.currentAudio.pause();
+        }
     })
 
     return { status, micActive, micEmoji, bootstrap }

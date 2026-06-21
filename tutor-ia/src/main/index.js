@@ -4,32 +4,32 @@
  * @architecture Orientada a Servicios
  */
 
-const { app, BrowserWindow, session, ipcMain } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const Anthropic = require('@anthropic-ai/sdk');
-require('dotenv').config();
+const { app, BrowserWindow, session, ipcMain } = require("electron");
+const path = require("path");
+const fs = require("fs");
+const Anthropic = require("@anthropic-ai/sdk");
+require("dotenv").config();
 
 // ============================================================================
 // [CONFIG] CAPA DE CONFIGURACIÓN
 // ============================================================================
 const CONFIG = {
   MODELS: {
-    DEV: "claude-haiku-4-5-20251001",   // Modo Ahorro ($50 USD de presupuesto)
-    JUECES: "claude-sonnet-4-6",        // Modo Pitch (Calidad pedagógica premium)
+    DEV: "claude-haiku-4-5-20251001", // Modo Ahorro ($50 USD de presupuesto)
+    JUECES: "claude-sonnet-4-6", // Modo Pitch (Calidad pedagógica premium)
   },
 
   ACTIVE_MODEL: "claude-haiku-4-5-20251001",
-  
+
   WINDOW: { width: 1050, height: 750 },
   PATHS: {
-    RENDER_HTML: path.join(__dirname, '..', 'renderer', 'index.html'),
-    PRELOAD_JS: path.join(__dirname, '..', 'preload', 'index.js'),
+    RENDER_HTML: path.join(__dirname, "..", "renderer", "index.html"),
+    PRELOAD_JS: path.join(__dirname, "..", "preload", "index.js"),
     // Si está empaquetada, usa la ruta segura del OS. Si no, usa tu carpeta local para que las veas en VS Code.
-    NOTES_DIR: app.isPackaged 
-      ? path.join(app.getPath('userData'), 'notas') 
-      : path.join(__dirname, '..', '..', 'notas')
-  }
+    NOTES_DIR: app.isPackaged
+      ? path.join(app.getPath("userData"), "notas")
+      : path.join(__dirname, "..", "..", "notas"),
+  },
 };
 
 // ============================================================================
@@ -53,9 +53,9 @@ class StorageService {
    * @returns {string} Ruta absoluta del archivo generado
    */
   saveMarkdownNote(contenido) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filePath = path.join(this.baseDir, `nota_${timestamp}.md`);
-    fs.writeFileSync(filePath, contenido, 'utf-8');
+    fs.writeFileSync(filePath, contenido, "utf-8");
     return filePath;
   }
 
@@ -64,9 +64,12 @@ class StorageService {
    */
   getPastTopics() {
     if (!fs.existsSync(this.baseDir)) return [];
-    return fs.readdirSync(this.baseDir)
-      .filter(file => file.endsWith('.md'))
-      .map(file => file.replace('nota_', '').replace('.md', '').split('_')[0]);
+    return fs
+      .readdirSync(this.baseDir)
+      .filter((file) => file.endsWith(".md"))
+      .map(
+        (file) => file.replace("nota_", "").replace(".md", "").split("_")[0],
+      );
   }
 }
 
@@ -78,56 +81,87 @@ class TutorSchemas {
   static getUIContractTool() {
     return {
       name: "actualizar_interfaz",
-      description: "Actualiza la pizarra 2D, la emoción del avatar y el TTS. DEBE invocarse siempre para responder al alumno.",
+      description:
+        "Actualiza la pizarra 2D, la emoción del avatar y el TTS. DEBE invocarse siempre para responder al alumno.",
       input_schema: {
         type: "object",
         properties: {
-          texto_a_hablar: { 
-            type: "string", 
-            description: "Respuesta socrática ultra breve (máximo 2 oraciones) para el sintetizador de voz." 
+          texto_a_hablar: {
+            type: "string",
+            description:
+              "Respuesta socrática ultra breve (máximo 2 oraciones) para el sintetizador de voz.",
           },
-          avatar_estado: { 
-            type: "string", 
+          avatar_estado: {
+            type: "string",
             enum: ["reposo", "hablando", "pensando", "confundido"],
-            description: "Actitud del avatar de la rana." 
+            description: "Actitud del avatar de la rana.",
           },
           pasos_dibujo: {
             type: "array",
-            description: "Instrucciones secuenciales de renderizado para el Canvas 2D.",
+            description:
+              "Instrucciones secuenciales de renderizado para el Canvas 2D.",
             items: {
               type: "object",
               properties: {
-                comando: { type: "string", enum: ["limpiar", "linea", "circulo", "rectangulo", "texto"] },
+                comando: {
+                  type: "string",
+                  enum: ["limpiar", "linea", "circulo", "rectangulo", "texto"],
+                },
                 x: { type: "number", description: "Origen X (0 a 700)" },
                 y: { type: "number", description: "Origen Y (0 a 500)" },
-                x2: { type: "number", description: "Destino X (Exclusivo de linea)" },
-                y2: { type: "number", description: "Destino Y (Exclusivo de linea)" },
-                w: { type: "number", description: "Ancho (Exclusivo de rectangulo)" },
-                h: { type: "number", description: "Alto (Exclusivo de rectangulo)" },
-                radio: { type: "number", description: "Radio (Exclusivo de circulo)" },
-                contenido: { type: "string", description: "Texto a pintar (Exclusivo de comando texto)" },
-                color: { type: "string", description: "Hexadecimal del trazo, ej: #4f46e5" }
+                x2: {
+                  type: "number",
+                  description: "Destino X (Exclusivo de linea)",
+                },
+                y2: {
+                  type: "number",
+                  description: "Destino Y (Exclusivo de linea)",
+                },
+                w: {
+                  type: "number",
+                  description: "Ancho (Exclusivo de rectangulo)",
+                },
+                h: {
+                  type: "number",
+                  description: "Alto (Exclusivo de rectangulo)",
+                },
+                radio: {
+                  type: "number",
+                  description: "Radio (Exclusivo de circulo)",
+                },
+                contenido: {
+                  type: "string",
+                  description: "Texto a pintar (Exclusivo de comando texto)",
+                },
+                color: {
+                  type: "string",
+                  description: "Hexadecimal del trazo, ej: #4f46e5",
+                },
               },
-              required: ["comando"]
-            }
-          }
+              required: ["comando"],
+            },
+          },
         },
-        required: ["texto_a_hablar", "avatar_estado", "pasos_dibujo"]
-      }
+        required: ["texto_a_hablar", "avatar_estado", "pasos_dibujo"],
+      },
     };
   }
 
   static getSaveNotesTool() {
     return {
       name: "guardar_apuntes",
-      description: "Crea un archivo .md en el disco del usuario con un resumen de valor de la lección.",
+      description:
+        "Crea un archivo .md en el disco del usuario con un resumen de valor de la lección.",
       input_schema: {
         type: "object",
         properties: {
-          contenido_markdown: { type: "string", description: "Apuntes en formato Markdown." }
+          contenido_markdown: {
+            type: "string",
+            description: "Apuntes en formato Markdown.",
+          },
         },
-        required: ["contenido_markdown"]
-      }
+        required: ["contenido_markdown"],
+      },
     };
   }
 }
@@ -145,9 +179,10 @@ class AgentService {
 
   _buildSystemPrompt() {
     const temasPasados = this.storage.getPastTopics();
-    const memoriaAncla = temasPasados.length > 0 
-      ? `El alumno ya tiene notas guardadas sobre: ${temasPasados.join(', ')}.` 
-      : `Es la primera sesión del alumno.`;
+    const memoriaAncla =
+      temasPasados.length > 0
+        ? `El alumno ya tiene notas guardadas sobre: ${temasPasados.join(", ")}.`
+        : `Es la primera sesión del alumno.`;
 
     return `Eres Tutor IA, un profesor socrático de excelencia, minimalista y directo.
     
@@ -161,11 +196,14 @@ class AgentService {
   }
 
   /**
-   * @param {string} promptUsuario 
+   * @param {string} promptUsuario
    * @returns {Promise<Object>} Contrato JSON verificado
    */
   async processUserPrompt(promptUsuario) {
-    const tools = [TutorSchemas.getUIContractTool(), TutorSchemas.getSaveNotesTool()];
+    const tools = [
+      TutorSchemas.getUIContractTool(),
+      TutorSchemas.getSaveNotesTool(),
+    ];
 
     const response = await this.anthropic.messages.create({
       model: CONFIG.ACTIVE_MODEL,
@@ -174,18 +212,23 @@ class AgentService {
       messages: [{ role: "user", content: promptUsuario }],
       tools: tools,
       // Forzamos al modelo a entregar el JSON de la UI obligatoriamente:
-      tool_choice: { type: "tool", name: "actualizar_interfaz" }
+      tool_choice: { type: "tool", name: "actualizar_interfaz" },
     });
 
-    const uiBlock = response.content.find(b => b.type === 'tool_use' && b.name === 'actualizar_interfaz');
-    const notesBlock = response.content.find(b => b.type === 'tool_use' && b.name === 'guardar_apuntes');
+    const uiBlock = response.content.find(
+      (b) => b.type === "tool_use" && b.name === "actualizar_interfaz",
+    );
+    const notesBlock = response.content.find(
+      (b) => b.type === "tool_use" && b.name === "guardar_apuntes",
+    );
 
     // Side-effect controlado: Si decidió generar notas, las guardamos en segundo plano
     if (notesBlock) {
       this.storage.saveMarkdownNote(notesBlock.input.contenido_markdown);
     }
 
-    if (!uiBlock) throw new Error("Claude no generó el bloque 'actualizar_interfaz'.");
+    if (!uiBlock)
+      throw new Error("Claude no generó el bloque 'actualizar_interfaz'.");
     return uiBlock.input;
   }
 }
@@ -200,7 +243,9 @@ class WindowManager {
   }
 
   init() {
-    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => callback(true));
+    session.defaultSession.setPermissionRequestHandler(
+      (webContents, permission, callback) => callback(true),
+    );
 
     this.win = new BrowserWindow({
       width: this.config.WINDOW.width,
@@ -208,12 +253,12 @@ class WindowManager {
       webPreferences: {
         preload: this.config.PATHS.PRELOAD_JS,
         contextIsolation: true,
-        nodeIntegration: false
+        nodeIntegration: false,
       },
     });
 
-    if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
-      this.win.loadURL(process.env['ELECTRON_RENDERER_URL']);
+    if (!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]) {
+      this.win.loadURL(process.env["ELECTRON_RENDERER_URL"]);
     } else {
       this.win.loadFile(this.config.PATHS.RENDER_HTML);
     }
@@ -234,12 +279,13 @@ class AppOrchestrator {
 
   _registerIPCCheckpoints() {
     // 1. Checkpoint de bienvenida (Arranque limpio)
-    ipcMain.handle('inicializar-tutor', async () => {
+    ipcMain.handle("inicializar-tutor", async () => {
       try {
         const temas = this.storage.getPastTopics();
-        const textoSaludo = temas.length > 0
-          ? `¡Hola de nuevo! Veo que antes hemos repasado: ${temas.slice(-3).join(', ')}. ¿Qué tema exploraremos hoy?`
-          : `¡Hola! Soy tu Tutor IA. ¿Qué tema te gustaría aprender hoy?`;
+        const textoSaludo =
+          temas.length > 0
+            ? `¡Hola de nuevo! Veo que antes hemos repasado: ${temas.slice(-3).join(", ")}. ¿Qué tema exploraremos hoy?`
+            : `¡Hola! Soy tu Tutor IA. ¿Qué tema te gustaría aprender hoy?`;
 
         return {
           success: true,
@@ -248,9 +294,15 @@ class AppOrchestrator {
             avatar_estado: "reposo",
             pasos_dibujo: [
               { comando: "limpiar" },
-              { comando: "texto", x: 50, y: 100, contenido: "¿Qué aprenderemos hoy?", color: "#4f46e5" }
-            ]
-          }
+              {
+                comando: "texto",
+                x: 50,
+                y: 100,
+                contenido: "¿Qué aprenderemos hoy?",
+                color: "#4f46e5",
+              },
+            ],
+          },
         };
       } catch (error) {
         return { success: false, error: error.message };
@@ -258,7 +310,7 @@ class AppOrchestrator {
     });
 
     // 2. Checkpoint de conversación (Interacción con Claude)
-    ipcMain.handle('chat-with-agent', async (event, promptUsuario) => {
+    ipcMain.handle("chat-with-agent", async (event, promptUsuario) => {
       try {
         const uiJsonPayload = await this.agent.processUserPrompt(promptUsuario);
         return { success: true, data: uiJsonPayload };
@@ -268,10 +320,15 @@ class AppOrchestrator {
       }
     });
 
-    // 3. [TU CÓDIGO AÑADIDO] Checkpoint para el motor de voz (Groq)
-    ipcMain.handle('get-groq-key', () => {
+    // 3. Checkpoint para el motor de voz (Groq)
+    ipcMain.handle("get-groq-key", () => {
       // Asegúrate de que process.env.GROQ_API_KEY esté definido arriba en su archivo
-      return process.env.GROQ_API_KEY; 
+      return process.env.GROQ_API_KEY;
+    });
+
+    // 4. Checkpoint para el motor de voz (ElevenLabs)
+    ipcMain.handle("get-elevenlabs-key", () => {
+      return process.env.ELEVENLABS_API_KEY;
     });
   }
 
@@ -279,11 +336,13 @@ class AppOrchestrator {
     app.whenReady().then(() => {
       this.windowManager.init();
       this._registerIPCCheckpoints();
-      console.log(`[Orquestador Boot] Listo. Modelo en uso: ${CONFIG.ACTIVE_MODEL}`);
+      console.log(
+        `[Orquestador Boot] Listo. Modelo en uso: ${CONFIG.ACTIVE_MODEL}`,
+      );
     });
 
-    app.on('window-all-closed', () => {
-      if (process.platform !== 'darwin') app.quit();
+    app.on("window-all-closed", () => {
+      if (process.platform !== "darwin") app.quit();
     });
   }
 }

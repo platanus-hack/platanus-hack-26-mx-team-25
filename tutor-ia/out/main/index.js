@@ -45,7 +45,9 @@ class StorageService {
    */
   getPastTopics() {
     if (!fs.existsSync(this.baseDir)) return [];
-    return fs.readdirSync(this.baseDir).filter((file) => file.endsWith(".md")).map((file) => file.replace("nota_", "").replace(".md", "").split("_")[0]);
+    return fs.readdirSync(this.baseDir).filter((file) => file.endsWith(".md")).map(
+      (file) => file.replace("nota_", "").replace(".md", "").split("_")[0]
+    );
   }
 }
 class TutorSchemas {
@@ -71,16 +73,40 @@ class TutorSchemas {
             items: {
               type: "object",
               properties: {
-                comando: { type: "string", enum: ["limpiar", "linea", "circulo", "rectangulo", "texto"] },
+                comando: {
+                  type: "string",
+                  enum: ["limpiar", "linea", "circulo", "rectangulo", "texto"]
+                },
                 x: { type: "number", description: "Origen X (0 a 700)" },
                 y: { type: "number", description: "Origen Y (0 a 500)" },
-                x2: { type: "number", description: "Destino X (Exclusivo de linea)" },
-                y2: { type: "number", description: "Destino Y (Exclusivo de linea)" },
-                w: { type: "number", description: "Ancho (Exclusivo de rectangulo)" },
-                h: { type: "number", description: "Alto (Exclusivo de rectangulo)" },
-                radio: { type: "number", description: "Radio (Exclusivo de circulo)" },
-                contenido: { type: "string", description: "Texto a pintar (Exclusivo de comando texto)" },
-                color: { type: "string", description: "Hexadecimal del trazo, ej: #4f46e5" }
+                x2: {
+                  type: "number",
+                  description: "Destino X (Exclusivo de linea)"
+                },
+                y2: {
+                  type: "number",
+                  description: "Destino Y (Exclusivo de linea)"
+                },
+                w: {
+                  type: "number",
+                  description: "Ancho (Exclusivo de rectangulo)"
+                },
+                h: {
+                  type: "number",
+                  description: "Alto (Exclusivo de rectangulo)"
+                },
+                radio: {
+                  type: "number",
+                  description: "Radio (Exclusivo de circulo)"
+                },
+                contenido: {
+                  type: "string",
+                  description: "Texto a pintar (Exclusivo de comando texto)"
+                },
+                color: {
+                  type: "string",
+                  description: "Hexadecimal del trazo, ej: #4f46e5"
+                }
               },
               required: ["comando"]
             }
@@ -97,7 +123,10 @@ class TutorSchemas {
       input_schema: {
         type: "object",
         properties: {
-          contenido_markdown: { type: "string", description: "Apuntes en formato Markdown." }
+          contenido_markdown: {
+            type: "string",
+            description: "Apuntes en formato Markdown."
+          }
         },
         required: ["contenido_markdown"]
       }
@@ -124,11 +153,14 @@ class AgentService {
     3. No saludes ni digas frases de cortesía ("¡Excelente pregunta!"). Ve directo al grano.`;
   }
   /**
-   * @param {string} promptUsuario 
+   * @param {string} promptUsuario
    * @returns {Promise<Object>} Contrato JSON verificado
    */
   async processUserPrompt(promptUsuario) {
-    const tools = [TutorSchemas.getUIContractTool(), TutorSchemas.getSaveNotesTool()];
+    const tools = [
+      TutorSchemas.getUIContractTool(),
+      TutorSchemas.getSaveNotesTool()
+    ];
     const response = await this.anthropic.messages.create({
       model: CONFIG.ACTIVE_MODEL,
       max_tokens: 500,
@@ -139,12 +171,17 @@ class AgentService {
       // Forzamos al modelo a entregar el JSON de la UI obligatoriamente:
       tool_choice: { type: "tool", name: "actualizar_interfaz" }
     });
-    const uiBlock = response.content.find((b) => b.type === "tool_use" && b.name === "actualizar_interfaz");
-    const notesBlock = response.content.find((b) => b.type === "tool_use" && b.name === "guardar_apuntes");
+    const uiBlock = response.content.find(
+      (b) => b.type === "tool_use" && b.name === "actualizar_interfaz"
+    );
+    const notesBlock = response.content.find(
+      (b) => b.type === "tool_use" && b.name === "guardar_apuntes"
+    );
     if (notesBlock) {
       this.storage.saveMarkdownNote(notesBlock.input.contenido_markdown);
     }
-    if (!uiBlock) throw new Error("Claude no generó el bloque 'actualizar_interfaz'.");
+    if (!uiBlock)
+      throw new Error("Claude no generó el bloque 'actualizar_interfaz'.");
     return uiBlock.input;
   }
 }
@@ -154,7 +191,9 @@ class WindowManager {
     this.win = null;
   }
   init() {
-    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => callback(true));
+    session.defaultSession.setPermissionRequestHandler(
+      (webContents, permission, callback) => callback(true)
+    );
     this.win = new BrowserWindow({
       width: this.config.WINDOW.width,
       height: this.config.WINDOW.height,
@@ -190,7 +229,13 @@ class AppOrchestrator {
             avatar_estado: "reposo",
             pasos_dibujo: [
               { comando: "limpiar" },
-              { comando: "texto", x: 50, y: 100, contenido: "¿Qué aprenderemos hoy?", color: "#4f46e5" }
+              {
+                comando: "texto",
+                x: 50,
+                y: 100,
+                contenido: "¿Qué aprenderemos hoy?",
+                color: "#4f46e5"
+              }
             ]
           }
         };
@@ -210,12 +255,17 @@ class AppOrchestrator {
     ipcMain.handle("get-groq-key", () => {
       return process.env.GROQ_API_KEY;
     });
+    ipcMain.handle("get-elevenlabs-key", () => {
+      return process.env.ELEVENLABS_API_KEY;
+    });
   }
   start() {
     app.whenReady().then(() => {
       this.windowManager.init();
       this._registerIPCCheckpoints();
-      console.log(`[Orquestador Boot] Listo. Modelo en uso: ${CONFIG.ACTIVE_MODEL}`);
+      console.log(
+        `[Orquestador Boot] Listo. Modelo en uso: ${CONFIG.ACTIVE_MODEL}`
+      );
     });
     app.on("window-all-closed", () => {
       if (process.platform !== "darwin") app.quit();

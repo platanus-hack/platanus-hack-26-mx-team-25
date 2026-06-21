@@ -74,7 +74,6 @@ export class SpeechToText {
 
                     const data = await response.json();
                     
-                    // AQUÍ ESTÁ LA DEFENSA: Si Groq se queja, lo atrapamos
                     if (!response.ok) {
                         console.error("Respuesta fallida de Groq:", data);
                         reject(`Error API Groq: ${data.error?.message || response.status}`);
