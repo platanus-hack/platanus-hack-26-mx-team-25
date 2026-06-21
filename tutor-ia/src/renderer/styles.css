@@ -1,0 +1,113 @@
+:root {
+    --bg-app: #161616;
+    --bg-dot: #232323;
+    --bg-header: #1c1c1c;
+    --bg-board: #1a1a1a;
+    --border-subtle: #2e2e2e;
+    --text-primary: #f1f1f1;
+    --text-secondary: #9c9c9c;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: #fdf8f8;
+    background-image: radial-gradient(#ebe7e7 1px, transparent 1px);
+    background-size: 24px 24px;
+    color: #1e1e1e;
+    font-family: 'Hanken Grotesk', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- HEADER ---------- */
+.app-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 16px 28px;
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.app-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.app-status {
+    margin: 0;
+    flex-grow: 1;
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.mic-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #2a2a2a;
+    border: 1px solid var(--border-subtle);
+    transition: background 0.2s ease;
+}
+
+.mic-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* ---------- BOARD ---------- */
+.board-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+}
+
+#pizarra-container {
+    position: relative; /* ancla para que el avatar flote dentro de este contenedor */
+    width: 100%;
+    max-width: 1450px;
+    background: var(--bg-board);
+    border: 1px solid #fdf8f8;;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background-color: #fdf8f8;
+    background-image: radial-gradient(#ebe7e7 1px, transparent 1px);
+    background-size: 24px 24px;
+    color: #1e1e1e;
+    border: 1px solid #fdf8f8;
+    border-radius: 8px;
+}
+
+/* ---------- AVATAR FLOTANTE ---------- */
+.avatar-float {
+    position: absolute;
+    width: 110px;
+    height: auto;
+    pointer-events: none; /* no bloquea clicks sobre la pizarra */
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+    transition: top 1.4s ease-in-out, left 1.4s ease-in-out;
+    top: 20px;
+    left: 20px;
+    z-index: 5;
+}
